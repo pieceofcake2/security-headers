@@ -167,10 +167,10 @@ class SecurityHeadersTest extends CakeTestCase
 
     public function testEveryClassOfThePlugin(): void
     {
-        $classes = array_map(static fn(string $file): string => 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . basename($file, '.php'), glob(dirname(__DIR__, 3) . '/Lib/ContentSecurityPolicy/*.php') ?: []);
+        $classes = array_map(static fn(string $file): string => 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . basename($file, '.php'), glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: []);
         $classes = array_values(array_filter($classes, static fn(string $class): bool => $class !== Sources::class));
 
-        $this->assertCount(7, $classes);
+        $this->assertCount(24, $classes);
         foreach ($classes as $class) {
             $policy = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [$class]]), true)['Content-Security-Policy-Report-Only'];
 

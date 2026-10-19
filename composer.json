@@ -19,7 +19,7 @@
     },
     "autoload": {
         "psr-4": {
-            "PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\": "Lib/ContentSecurityPolicy/"
+            "PieceOfCake2\\SecurityHeaders\\": "src/"
         }
     },
     "autoload-dev": {

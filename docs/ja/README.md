@@ -131,9 +131,13 @@ default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self';
 script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-nocookie.com
 ```
 
-プラグインのクラス (`PieceOfCake2\SecurityHeaders\ContentSecurityPolicy`) は、Google のサービスに必要な
-ソースです。[Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja) に
-もとづいています。
+プラグインのクラス (`PieceOfCake2\SecurityHeaders\ContentSecurityPolicy`) は、サービスに必要なソースです。
+Google のタグは [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)、`GoogleMaps` は
+[Maps JavaScript API のガイド](https://developers.google.com/maps/documentation/javascript/content-security-policy?hl=ja)
+、Adobe は [Adobe のガイド](https://experienceleague.adobe.com/ja/docs/experience-platform/tags/client-side/content-security-policy)
+にもとづき、ほかはサービスの埋め込みコードから作って、ポリシーを有効にした Chrome で確かめています。
+
+**タグマネージャーとアクセス解析**
 
 | クラス | 対象 |
 | --- | --- |
@@ -141,12 +145,52 @@ script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-
 | `GoogleTagManagerPreview` | Google タグマネージャーのプレビューモード |
 | `GoogleAnalytics` | Google アナリティクス (Google 広告の機能なし) |
 | `GoogleAnalyticsWithAds` | Google アナリティクス (Google シグナルやリマーケティングなど、Google 広告の機能あり) |
+| `AdobeTags` | Adobe Experience Platform Tags (旧 Adobe Launch) のライブラリ |
+| `AdobeAnalytics` | Adobe Analytics (AppMeasurement) と Experience Cloud ID サービス |
+| `AdobeWebSdk` | Adobe Experience Platform の Web SDK |
+
+**広告のコンバージョン (CV) タグ**
+
+| クラス | 対象 |
+| --- | --- |
 | `GoogleAds` | Google 広告のコンバージョン、リマーケティング、コンバージョンリンカー、ユーザー提供データ |
 | `Floodlight` | Floodlight (カスタムスクリプトを含む) |
 | `MerchantCenter` | Google Merchant Center |
+| `MetaPixel` | Meta ピクセル (Facebook ピクセル。Instagram 広告も) |
+| `TikTokPixel` | TikTok ピクセル |
+| `XPixel` | X ピクセル (旧 Twitter ピクセル) |
+| `LineTag` | LINE 広告の LINE Tag |
+| `YahooAds` | Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン測定タグとサイトリターゲティングタグ、サイトジェネラルタグ |
+| `MicrosoftAds` | Microsoft 広告の UET タグ |
 
-スクリプトは、ガイドの `script-src-elem` ではなく `script-src` に追加します。Safari 15.4 より前など、
-`script-src-elem` に対応していないブラウザーでも許可されるようにするためです。
+**埋め込み**
+
+| クラス | 対象 |
+| --- | --- |
+| `GoogleMaps` | Google マップの Maps JavaScript API |
+| `GoogleMapsEmbed` | iframe で埋め込んだ Google マップ (Maps Embed API、または「共有」>「地図を埋め込む」) |
+| `YouTube` | YouTube の埋め込みプレーヤー (`youtube-nocookie.com` も)、IFrame Player API、サムネイル |
+| `Facebook` | Facebook の JavaScript SDK とソーシャルプラグイン (ページプラグイン、埋め込み投稿、いいね！ボタンなど) |
+| `Instagram` | Instagram の埋め込み投稿 |
+| `X` | X (旧 Twitter) の埋め込みポスト、タイムライン、ボタン |
+| `TikTok` | TikTok の埋め込み動画とプロフィール |
+| `Line` | LINE のソーシャルプラグイン (「LINEで送る」ボタン、「友だち追加」ボタン) |
+
+スクリプトは、Google のガイドの `script-src-elem` ではなく `script-src` に追加します。Safari 15.4 より前など、
+`script-src-elem` に対応していないブラウザーでも許可されるようにするためです。サイトのほかにも必要なものがある
+サービスがあります。
+
+- `GoogleMaps` は、Google のガイドと同じく、`script-src` に `'unsafe-eval'`、`style-src` に `'unsafe-inline'` を
+  追加します。API のコールバックなどのインラインのスクリプトには nonce が必要です。
+- `Facebook`、`Instagram`、`X`、`TikTok`、`Line` は `style-src` に `'unsafe-inline'` を追加します。スクリプトが
+  ページにスタイルを追加し、埋め込みコードに `style` 属性があるためです。
+- `AdobeTags` はライブラリだけです。拡張機能のクラス (`AdobeAnalytics` など) と、カスタムコードのための nonce
+  (Core 拡張機能に nonce のデータ要素を設定) も追加してください。自分のドメイン (CNAME) のトラッキングサーバーや
+  エッジドメインは、名前を付けて追加します。
+- 同じサービスでも、埋め込みとコンバージョンタグは別のクラスです (ページプラグインは `Facebook`、Meta 広告の
+  コンバージョンは `MetaPixel` など)。ページで使うものだけを並べてください。
+- サービスはホストを変えることがあります。クラスにないホストがブラウザーのコンソールに報告されたら、名前を付けて
+  `contentSecurityPolicyAllow` に追加してください。
 
 複数のアプリケーションで同じサービスのソースを使うには、`Sources` を実装したクラスを `src/Lib/` などに
 書き、同じように並べます。
