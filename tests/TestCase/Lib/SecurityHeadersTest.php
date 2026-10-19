@@ -219,4 +219,32 @@ class SecurityHeadersTest extends CakeTestCase
         $this->assertMatchesRegularExpression('/^[A-Za-z0-9+\/]{22}==$/', $nonce);
         $this->assertNotSame($nonce, SecurityHeaders::nonce());
     }
+
+    /**
+     * Every class of the plugin is in the presets of the docs, with its sources
+     *
+     * @return void
+     */
+    public function testPresetsOfTheDocs(): void
+    {
+        foreach (['docs/presets.md', 'docs/ja/presets.md'] as $file) {
+            $docs = (string)file_get_contents(dirname(__DIR__, 3) . DS . $file);
+            foreach (glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: [] as $path) {
+                $name = basename($path, '.php');
+                $class = 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . $name;
+                if ($class === Sources::class) {
+                    continue;
+                }
+                $this->assertMatchesRegularExpression('/^### `' . $name . '`/m', $docs, $file . ': ' . $name);
+                // From the heading of the class to the next heading
+                $section = (string)preg_split('/^#{2,3} /m', substr($docs, (int)strpos($docs, '### `' . $name . '`') + 4))[0];
+                $rows = [];
+                foreach ((new $class())->sources() as $directive => $sources) {
+                    $rows[] = '| `' . $directive . '` | `' . implode('` `', (array)$sources) . '` |';
+                }
+                preg_match_all('/^\| `[a-z-]+` \|.*\|$/m', $section, $matches);
+                $this->assertSame($rows, $matches[0], $file . ': ' . $name);
+            }
+        }
+    }
 }

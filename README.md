@@ -21,6 +21,7 @@ default, so that you can adapt it to your application before enforcing it.
 
 - Website: https://pieceofcake2.github.io/security-headers/ (日本語: https://pieceofcake2.github.io/security-headers/ja/)
 - Markdown: [docs/README.md](docs/README.md) (日本語: [docs/ja/README.md](docs/ja/README.md)) (for AI tools and offline reading)
+- Presets of the services: [docs/presets.md](docs/presets.md) (日本語: [docs/ja/presets.md](docs/ja/presets.md))
 
 It covers every setting and its default, the headers for the web server or the CDN, enforcing the
 Content Security Policy, and changing the headers in an action.
