@@ -60,6 +60,10 @@ Change the settings in `config/bootstrap.php`:
 Configure::write('SecurityHeaders', [
     'xFrameOptions' => 'DENY',
     'permissionsPolicy' => 'camera=(), microphone=(), geolocation=(), payment=()',
+    // Allows the scripts of a CDN, in addition to those of the site
+    'contentSecurityPolicySources' => [
+        'script-src' => ['https://cdn.example.com'],
+    ],
 ]);
 ```
 

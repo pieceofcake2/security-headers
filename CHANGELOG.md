@@ -10,6 +10,8 @@ First release of `pieceofcake2/security-headers`.
   `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`,
   `Cross-Origin-Opener-Policy` and `Cross-Origin-Resource-Policy` by default, and `X-Powered-By`
   removed
+- `contentSecurityPolicySources` and `SecurityHeadersComponent::addSources()` to add sites to the
+  directives of the Content Security Policy, which can also be written as an array of directives
 - `Strict-Transport-Security`, `Cache-Control`, `Cross-Origin-Embedder-Policy` and
   `X-XSS-Protection` off by default
 - `SecurityHeadersComponent` to change or disable a header in an action

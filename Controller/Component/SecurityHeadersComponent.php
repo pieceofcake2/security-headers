@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 App::uses('Component', 'Controller');
+App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
 App::uses('SecurityHeadersFilter', 'SecurityHeaders.Routing/Filter');
 
 /**
@@ -11,6 +12,9 @@ App::uses('SecurityHeadersFilter', 'SecurityHeaders.Routing/Filter');
  * // An action shown in a frame of a partner site
  * $this->SecurityHeaders->set('Content-Security-Policy', "frame-ancestors 'self' https://partner.example.com");
  * $this->SecurityHeaders->disable('X-Frame-Options');
+ *
+ * // An action with a video of YouTube
+ * $this->SecurityHeaders->addSources('frame-src', 'https://www.youtube-nocookie.com');
  * ```
  */
 class SecurityHeadersComponent extends Component
@@ -21,6 +25,13 @@ class SecurityHeadersComponent extends Component
      * @var \Controller|null
      */
     protected ?Controller $controller = null;
+
+    /**
+     * The sources added in this request, by directive
+     *
+     * @var array<string, array<string>>
+     */
+    protected array $sources = [];
 
     /**
      * Keeps the controller
@@ -45,6 +56,27 @@ class SecurityHeadersComponent extends Component
         $this->disable($name);
         $this->controller?->response->header($name, $value);
         $this->send($name, $value);
+    }
+
+    /**
+     * Adds sources to a directive of the Content Security Policy of the settings, in this response
+     *
+     * @param string $directive Directive, e.g. `img-src`
+     * @param array<string>|string $sources Sources, e.g. `https://images.example.com`
+     * @return void
+     */
+    public function addSources(string $directive, array|string $sources): void
+    {
+        $directive = strtolower($directive);
+        $this->sources[$directive] = [...$this->sources[$directive] ?? [], ...(array)$sources];
+        $settings = SecurityHeaders::settings();
+        $settings['contentSecurityPolicySources'] = array_merge_recursive((array)$settings['contentSecurityPolicySources'], $this->sources);
+        $https = $this->controller !== null && $this->controller->request->is('ssl');
+        foreach (SecurityHeaders::headers($settings, $https) as $name => $value) {
+            if (str_starts_with($name, 'Content-Security-Policy')) {
+                $this->set($name, $value);
+            }
+        }
     }
 
     /**

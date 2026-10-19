@@ -38,6 +38,7 @@ class SecurityHeadersComponentTest extends CakeTestCase
     public function tearDown(): void
     {
         SecurityHeadersFilter::$send = null;
+        Configure::delete('SecurityHeaders');
         parent::tearDown();
     }
 
@@ -56,5 +57,30 @@ class SecurityHeadersComponentTest extends CakeTestCase
 
         $this->assertSame(['X-Frame-Options' => 'SAMEORIGIN', 'content-security-policy' => "frame-ancestors 'self' https://partner.example.com"], $this->Controller->response->header());
         $this->assertSame([['content-security-policy', null], ['content-security-policy', "frame-ancestors 'self' https://partner.example.com"]], $this->sent);
+    }
+
+    public function testAddSources(): void
+    {
+        Configure::write('SecurityHeaders', [
+            'contentSecurityPolicy' => ['default-src' => ["'self'"]],
+            'contentSecurityPolicyReportOnly' => false,
+            'contentSecurityPolicySources' => ['img-src' => 'https://images.example.com'],
+        ]);
+        $this->SecurityHeaders->addSources('FRAME-SRC', 'https://www.youtube-nocookie.com');
+        $this->SecurityHeaders->addSources('img-src', ['data:']);
+
+        $this->assertSame(
+            "default-src 'self'; img-src 'self' https://images.example.com data:; frame-src 'self' https://www.youtube-nocookie.com",
+            $this->Controller->response->header()['Content-Security-Policy'],
+        );
+        $this->assertSame([['Content-Security-Policy', null], ['Content-Security-Policy', "default-src 'self'; img-src 'self' https://images.example.com data:; frame-src 'self' https://www.youtube-nocookie.com"]], array_slice($this->sent, -2));
+    }
+
+    public function testAddSourcesInReportOnlyMode(): void
+    {
+        $this->SecurityHeaders->addSources('img-src', 'data:');
+
+        $this->assertStringEndsWith("; img-src 'self' data:", $this->Controller->response->header()['Content-Security-Policy-Report-Only']);
+        $this->assertSame("default-src 'self'", $this->Controller->response->header()['Content-Security-Policy']);
     }
 }

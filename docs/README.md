@@ -10,6 +10,7 @@ off by default. The Content Security Policy is sent in report-only mode by defau
 
 - [Installation](#installation)
 - [Settings](#settings)
+- [Adding Sites to the Content Security Policy](#adding-sites-to-the-content-security-policy)
 - [Headers for the Web Server or the CDN](#headers-for-the-web-server-or-the-cdn)
 - [Enforcing the Content Security Policy](#enforcing-the-content-security-policy)
 - [Changing the Headers in an Action](#changing-the-headers-in-an-action)
@@ -62,7 +63,9 @@ not leave a header with its default silently.
 ```php
 Configure::write('SecurityHeaders', [
     'xFrameOptions' => 'DENY',
-    'contentSecurityPolicy' => "default-src 'self'; img-src 'self' https://cdn.example.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+    'contentSecurityPolicySources' => [
+        'script-src' => ['https://cdn.example.com'],
+    ],
 ]);
 ```
 
@@ -70,7 +73,8 @@ On by default:
 
 | Setting | Header | Default | What it does |
 | --- | --- | --- | --- |
-| `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | The sources of the scripts, styles, images, frames and forms of the page. It is the main defense against XSS. |
+| `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | The sources of the scripts, styles, images, frames and forms of the page. It is the main defense against XSS. An array of the directives and their sources, or the policy as a string. |
+| `contentSecurityPolicySources` | | `[]` | The sources added to the directives of the policy, e.g. other sites. See [Adding Sites to the Content Security Policy](#adding-sites-to-the-content-security-policy). |
 | `contentSecurityPolicyReportOnly` | | `true` | Sends the policy as `Content-Security-Policy-Report-Only`: the browsers report the violations in the console (and to `reportUri`) without blocking them. See [Enforcing the Content Security Policy](#enforcing-the-content-security-policy). |
 | `reportUri` | | `false` | A URL that receives the violation reports, added to the policy as `report-uri`. |
 | `xFrameOptions` | `X-Frame-Options` | `SAMEORIGIN` | Whether other sites can show the page in a frame (clickjacking). `frame-ancestors` of the policy replaces it in modern browsers; this one is for the old ones. |
@@ -93,6 +97,45 @@ Off by default:
 The plugin does not remove `Server`, which the web server sends: turn it off in the web server
 (`server_tokens off;` in nginx, `ServerTokens Prod` and `ServerSignature Off` in Apache).
 
+## Adding Sites to the Content Security Policy
+
+To allow the scripts, images or frames of other sites, add them with `contentSecurityPolicySources`,
+by directive. The policy keeps its other directives and sources:
+
+```php
+Configure::write('SecurityHeaders', [
+    'contentSecurityPolicySources' => [
+        'script-src' => ['https://cdn.example.com'],
+        'img-src' => ['https://images.example.com', 'data:'],
+        'frame-src' => ['https://www.youtube-nocookie.com'],
+    ],
+]);
+// default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none';
+// script-src 'self' https://cdn.example.com; img-src 'self' https://images.example.com data:;
+// frame-src 'self' https://www.youtube-nocookie.com
+```
+
+A directive that the policy does not have starts from the sources of the one that the browsers use
+instead, as `default-src` for `script-src`, so that `'self'` stays allowed. `'none'` is removed when
+you add sources to a directive.
+
+To write the whole policy, set `contentSecurityPolicy`, as an array or as a string:
+
+```php
+Configure::write('SecurityHeaders', [
+    'contentSecurityPolicy' => [
+        'default-src' => ["'self'"],
+        'img-src' => ["'self'", 'data:'],
+        'frame-ancestors' => ["'none'"],
+        'form-action' => ["'self'"],
+        'base-uri' => ["'self'"],
+        'object-src' => ["'none'"],
+    ],
+]);
+```
+
+For some actions only, use [`addSources()` of the component](#changing-the-headers-in-an-action).
+
 ## Headers for the Web Server or the CDN
 
 Some headers belong to the web server, the load balancer or the CDN, and are off by default:
@@ -114,8 +157,8 @@ it is enforced. Most applications need some changes first, so it is sent as
 `Content-Security-Policy-Report-Only` by default:
 
 1. Open the pages of the application with the console of the browser open, and fix or allow
-   what is reported. Move inline scripts to files, or add the sources you need, e.g.
-   `script-src 'self' https://cdn.example.com`.
+   what is reported. Move inline scripts to files, or [add the sites](#adding-sites-to-the-content-security-policy)
+   that you need.
 2. Optionally, collect the reports of the users' browsers with `reportUri`.
 3. When nothing is reported any more, enforce the policy:
 
@@ -145,9 +188,21 @@ class WidgetsController extends AppController
         $this->SecurityHeaders->set('Content-Security-Policy', "frame-ancestors 'self' https://partner.example.com");
         $this->SecurityHeaders->disable('X-Frame-Options');
     }
+
+    /**
+     * Shows a video of YouTube
+     *
+     * @return void
+     */
+    public function video(): void
+    {
+        $this->SecurityHeaders->addSources('frame-src', 'https://www.youtube-nocookie.com');
+    }
 }
 ```
 
+- `addSources($directive, $sources)` adds sources to a directive of the Content Security Policy of
+  the settings, as `contentSecurityPolicySources` does.
 - `set($name, $value)` replaces the header of the settings.
 - `disable($name)` does not send the header in this response.
 

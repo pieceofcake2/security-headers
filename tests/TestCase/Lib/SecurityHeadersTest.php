@@ -68,7 +68,7 @@ class SecurityHeadersTest extends CakeTestCase
     public function testContentSecurityPolicyEnforced(): void
     {
         $headers = SecurityHeaders::headers(SecurityHeaders::settings([
-            'contentSecurityPolicy' => "default-src 'self';",
+            'contentSecurityPolicy' => ['default-src' => "'self'"],
             'contentSecurityPolicyReportOnly' => false,
             'reportUri' => '/csp-reports',
         ]), true);
@@ -79,9 +79,59 @@ class SecurityHeadersTest extends CakeTestCase
 
     public function testContentSecurityPolicyOff(): void
     {
-        $headers = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicy' => false]), true);
+        foreach ([false, '', []] as $policy) {
+            $headers = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicy' => $policy]), true);
 
-        $this->assertArrayNotHasKey('Content-Security-Policy', $headers);
-        $this->assertArrayNotHasKey('Content-Security-Policy-Report-Only', $headers);
+            $this->assertArrayNotHasKey('Content-Security-Policy', $headers);
+            $this->assertArrayNotHasKey('Content-Security-Policy-Report-Only', $headers);
+        }
+    }
+
+    public function testContentSecurityPolicySources(): void
+    {
+        $headers = SecurityHeaders::headers(SecurityHeaders::settings([
+            'contentSecurityPolicySources' => [
+                'script-src' => ['https://cdn.example.com'],
+                'img-src' => ['https://images.example.com', 'data:'],
+                'frame-ancestors' => 'https://partner.example.com',
+                'object-src' => ['https://objects.example.com'],
+            ],
+        ]), true);
+
+        $this->assertSame(
+            "default-src 'self'; frame-ancestors 'self' https://partner.example.com; form-action 'self'; base-uri 'self'; object-src https://objects.example.com; script-src 'self' https://cdn.example.com; img-src 'self' https://images.example.com data:",
+            $headers['Content-Security-Policy-Report-Only'],
+        );
+    }
+
+    /**
+     * A directive without one of the policy starts from the one that the browsers use instead
+     *
+     * @return void
+     */
+    public function testContentSecurityPolicySourcesOfFallbacks(): void
+    {
+        $directives = SecurityHeaders::addSources(
+            ['default-src' => ["'self'"], 'script-src' => ["'self'", 'https://cdn.example.com'], 'child-src' => ["'none'"]],
+            ['worker-src' => 'blob:', 'frame-src' => 'https://www.youtube-nocookie.com', 'script-src-elem' => 'https://cdn.example.com', 'sandbox' => []],
+        );
+
+        $this->assertSame(['blob:'], $directives['worker-src']);
+        $this->assertSame(['https://www.youtube-nocookie.com'], $directives['frame-src']);
+        $this->assertSame(["'self'", 'https://cdn.example.com'], $directives['script-src-elem']);
+        $this->assertSame([], $directives['sandbox']);
+    }
+
+    public function testContentSecurityPolicyOfString(): void
+    {
+        $headers = SecurityHeaders::headers(SecurityHeaders::settings([
+            'contentSecurityPolicy' => "default-src 'self'; IMG-SRC 'self'  data:;; upgrade-insecure-requests;",
+            'contentSecurityPolicySources' => ['img-src' => 'https://images.example.com'],
+        ]), true);
+
+        $this->assertSame(
+            "default-src 'self'; img-src 'self' data: https://images.example.com; upgrade-insecure-requests",
+            $headers['Content-Security-Policy-Report-Only'],
+        );
     }
 }

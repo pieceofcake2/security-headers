@@ -10,6 +10,7 @@ Content Security Policy は、デフォルトでは報告のみのモードで�
 
 - [インストール](#installation)
 - [設定](#settings)
+- [Content Security Policy にサイトを追加する](#adding-sites-to-the-content-security-policy)
 - [ウェブサーバーや CDN で送るヘッダー](#headers-for-the-web-server-or-the-cdn)
 - [Content Security Policy を有効にする](#enforcing-the-content-security-policy)
 - [アクションでヘッダーを変える](#changing-the-headers-in-an-action)
@@ -61,7 +62,9 @@ Configure::write('Dispatcher.filters', [
 ```php
 Configure::write('SecurityHeaders', [
     'xFrameOptions' => 'DENY',
-    'contentSecurityPolicy' => "default-src 'self'; img-src 'self' https://cdn.example.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+    'contentSecurityPolicySources' => [
+        'script-src' => ['https://cdn.example.com'],
+    ],
 ]);
 ```
 
@@ -69,7 +72,8 @@ Configure::write('SecurityHeaders', [
 
 | 設定 | ヘッダー | デフォルト | 役割 |
 | --- | --- | --- | --- |
-| `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | ページのスクリプト、スタイル、画像、フレーム、フォームの送信先を制限します。XSS に対する主な防御です。 |
+| `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | ページのスクリプト、スタイル、画像、フレーム、フォームの送信先を制限します。XSS に対する主な防御です。ディレクティブとソースの配列か、ポリシーの文字列で書きます。 |
+| `contentSecurityPolicySources` | | `[]` | ポリシーのディレクティブに追加するソース (ほかのサイトなど)。[Content Security Policy にサイトを追加する](#adding-sites-to-the-content-security-policy) を参照してください。 |
 | `contentSecurityPolicyReportOnly` | | `true` | ポリシーを `Content-Security-Policy-Report-Only` で送ります。ブラウザーは違反をブロックせず、コンソール (と `reportUri`) に報告します。[Content Security Policy を有効にする](#enforcing-the-content-security-policy) を参照してください。 |
 | `reportUri` | | `false` | 違反の報告を受け取る URL。ポリシーに `report-uri` として追加します。 |
 | `xFrameOptions` | `X-Frame-Options` | `SAMEORIGIN` | ほかのサイトがページをフレームで表示できるか (クリックジャッキング)。モダンなブラウザーではポリシーの `frame-ancestors` が優先されます。古いブラウザー向けです。 |
@@ -92,6 +96,45 @@ Configure::write('SecurityHeaders', [
 ウェブサーバーが送る `Server` はプラグインでは取り除きません。ウェブサーバーでオフにしてください
 (nginx では `server_tokens off;`、Apache では `ServerTokens Prod` と `ServerSignature Off`)。
 
+## Content Security Policy にサイトを追加する
+
+ほかのサイトのスクリプト、画像、フレームを許可するには、`contentSecurityPolicySources` でディレクティブ
+ごとに追加します。ポリシーのほかのディレクティブとソースはそのまま残ります。
+
+```php
+Configure::write('SecurityHeaders', [
+    'contentSecurityPolicySources' => [
+        'script-src' => ['https://cdn.example.com'],
+        'img-src' => ['https://images.example.com', 'data:'],
+        'frame-src' => ['https://www.youtube-nocookie.com'],
+    ],
+]);
+// default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none';
+// script-src 'self' https://cdn.example.com; img-src 'self' https://images.example.com data:;
+// frame-src 'self' https://www.youtube-nocookie.com
+```
+
+ポリシーにないディレクティブは、ブラウザーが代わりに使うディレクティブ (`script-src` なら `default-src`)
+のソースから始めるので、`'self'` は許可されたままです。ソースを追加したディレクティブからは `'none'`
+を取り除きます。
+
+ポリシー全体を書くには、`contentSecurityPolicy` を配列か文字列で設定します。
+
+```php
+Configure::write('SecurityHeaders', [
+    'contentSecurityPolicy' => [
+        'default-src' => ["'self'"],
+        'img-src' => ["'self'", 'data:'],
+        'frame-ancestors' => ["'none'"],
+        'form-action' => ["'self'"],
+        'base-uri' => ["'self'"],
+        'object-src' => ["'none'"],
+    ],
+]);
+```
+
+一部のアクションだけで追加するには、[コンポーネントの `addSources()`](#changing-the-headers-in-an-action) を使います。
+
 ## ウェブサーバーや CDN で送るヘッダー
 
 次のヘッダーはウェブサーバー、ロードバランサー、CDN で送るもので、デフォルトでオフです。
@@ -113,8 +156,7 @@ Configure::write('SecurityHeaders', [
 `Content-Security-Policy-Report-Only` で送ります。
 
 1. ブラウザーのコンソールを開いてアプリケーションのページを開き、報告されたものを修正するか許可します。
-   インラインのスクリプトはファイルに移すか、必要なソースを追加します
-   (例: `script-src 'self' https://cdn.example.com`)。
+   インラインのスクリプトはファイルに移すか、必要な[サイトを追加](#adding-sites-to-the-content-security-policy)します。
 2. 必要なら、`reportUri` で利用者のブラウザーからの報告を集めます。
 3. 報告が出なくなったら、ポリシーを有効にします。
 
@@ -144,9 +186,21 @@ class WidgetsController extends AppController
         $this->SecurityHeaders->set('Content-Security-Policy', "frame-ancestors 'self' https://partner.example.com");
         $this->SecurityHeaders->disable('X-Frame-Options');
     }
+
+    /**
+     * YouTube の動画を表示する
+     *
+     * @return void
+     */
+    public function video(): void
+    {
+        $this->SecurityHeaders->addSources('frame-src', 'https://www.youtube-nocookie.com');
+    }
 }
 ```
 
+- `addSources($directive, $sources)` は、`contentSecurityPolicySources` と同じように、設定の Content
+  Security Policy のディレクティブにソースを追加します。
 - `set($name, $value)` は、設定のヘッダーを置き換えます。
 - `disable($name)` は、このレスポンスではそのヘッダーを送りません。
 
