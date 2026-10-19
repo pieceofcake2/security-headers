@@ -67,7 +67,9 @@ Configure::write('SecurityHeaders', [
 ]);
 ```
 
-A setting is the value of its header, or `false` not to send it. See [Settings](docs/README.md#settings).
+A setting is the value of its header, or `false` not to send it. Presets add the sources of
+Google Tag Manager, Google Analytics and Google Ads to the Content Security Policy. See
+[Settings](docs/README.md#settings).
 
 ## Contributing
 

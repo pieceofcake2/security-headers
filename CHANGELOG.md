@@ -15,4 +15,7 @@ First release of `pieceofcake2/security-headers`.
 - `Strict-Transport-Security`, `Cache-Control`, `Cross-Origin-Embedder-Policy` and
   `X-XSS-Protection` off by default
 - `SecurityHeadersComponent` to change or disable a header in an action
+- Presets of the sources of Google Tag Manager, Google Analytics, Google Ads, Floodlight and Google
+  Merchant Center, and a nonce of each request for their inline scripts, with
+  `SecurityHeadersHelper::nonce()`
 - Documentation in English and Japanese

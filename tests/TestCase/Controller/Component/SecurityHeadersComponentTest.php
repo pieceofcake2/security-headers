@@ -83,4 +83,13 @@ class SecurityHeadersComponentTest extends CakeTestCase
         $this->assertStringEndsWith("; img-src 'self' data:", $this->Controller->response->header()['Content-Security-Policy-Report-Only']);
         $this->assertSame("default-src 'self'", $this->Controller->response->header()['Content-Security-Policy']);
     }
+
+    public function testAddSourcesKeepsTheNonce(): void
+    {
+        Configure::write('SecurityHeaders.contentSecurityPolicyNonce', true);
+        $this->Controller->request->addParams([SecurityHeadersFilter::NONCE => 'abc']);
+        $this->SecurityHeaders->addSources('img-src', 'data:');
+
+        $this->assertStringEndsWith("; img-src 'self' data:; script-src 'self' 'nonce-abc'", $this->Controller->response->header()['Content-Security-Policy-Report-Only']);
+    }
 }

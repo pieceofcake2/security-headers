@@ -27,6 +27,13 @@ class SecurityHeadersFilter extends DispatcherFilter
     public $priority = 1;
 
     /**
+     * The parameter of the request with the nonce of the Content Security Policy
+     *
+     * @var string
+     */
+    public const NONCE = 'securityHeadersNonce';
+
+    /**
      * Sends a header, or removes one when the value is null: `header()` by default
      *
      * @var (\Closure(string, string|null): void)|null
@@ -53,7 +60,13 @@ class SecurityHeadersFilter extends DispatcherFilter
             $value === null ? header_remove($name) : header($name . ': ' . $value);
         };
 
-        foreach (SecurityHeaders::headers($settings, $request->is('ssl')) as $name => $value) {
+        $nonce = null;
+        if (!empty($settings['contentSecurityPolicyNonce'])) {
+            $nonce = SecurityHeaders::nonce();
+            $request->addParams([self::NONCE => $nonce]);
+        }
+
+        foreach (SecurityHeaders::headers($settings, $request->is('ssl'), $nonce) as $name => $value) {
             $response->header($name, $value);
             $send($name, $value);
         }

@@ -41,6 +41,10 @@ class SecurityHeaders
         ],
         // The sources added to the directives of the policy, e.g. ['script-src' => ['https://cdn.example.com']]
         'contentSecurityPolicySources' => [],
+        // The sources of the services of PRESETS added to the policy, e.g. ['googleTagManager', 'googleAnalytics']
+        'contentSecurityPolicyPresets' => [],
+        // A nonce of each request added to script-src, for the inline scripts: see nonce()
+        'contentSecurityPolicyNonce' => false,
         // The browsers report the violations without blocking them: adapt the policy to the application first
         'contentSecurityPolicyReportOnly' => true,
         'reportUri' => false,
@@ -56,6 +60,60 @@ class SecurityHeaders
         'cacheControl' => false,
         'crossOriginEmbedderPolicy' => false,
         'xXssProtection' => false,
+    ];
+
+    /**
+     * The sources that the services need, by directive. From
+     * https://developers.google.com/tag-platform/security/guides/csp, with `script-src` instead of `script-src-elem`
+     * for the browsers without `script-src-elem`.
+     */
+    public const PRESETS = [
+        // The container of Google Tag Manager. Its inline snippet needs the nonce, see contentSecurityPolicyNonce
+        'googleTagManager' => [
+            'script-src' => ['https://www.googletagmanager.com'],
+            'img-src' => ['https://www.googletagmanager.com'],
+            'connect-src' => ['https://www.googletagmanager.com', 'https://www.google.com'],
+        ],
+        // The preview mode of Google Tag Manager
+        'googleTagManagerPreview' => [
+            'script-src' => ['https://www.googletagmanager.com', 'https://tagmanager.google.com'],
+            'style-src' => ['https://www.googletagmanager.com', 'https://tagmanager.google.com', 'https://fonts.googleapis.com'],
+            'img-src' => ['https://www.googletagmanager.com', 'https://ssl.gstatic.com', 'https://www.gstatic.com'],
+            'font-src' => ['https://fonts.gstatic.com', 'data:'],
+        ],
+        // Google Analytics, without the features of Google Ads
+        'googleAnalytics' => [
+            'script-src' => ['https://www.googletagmanager.com'],
+            'img-src' => ['https://www.googletagmanager.com', 'https://*.google-analytics.com'],
+            'connect-src' => ['https://www.googletagmanager.com', 'https://*.google-analytics.com', 'https://*.google.com'],
+        ],
+        // Google Analytics, with the features of Google Ads. Add the domains of the countries, e.g. https://*.google.co.jp
+        'googleAnalyticsWithAds' => [
+            'script-src' => ['https://www.googletagmanager.com'],
+            'img-src' => ['https://www.googletagmanager.com', 'https://*.google-analytics.com', 'https://*.google.com', 'https://*.g.doubleclick.net'],
+            'connect-src' => ['https://www.googletagmanager.com', 'https://*.google-analytics.com', 'https://*.google.com', 'https://*.g.doubleclick.net', 'https://pagead2.googlesyndication.com'],
+            'frame-src' => ['https://www.googletagmanager.com'],
+        ],
+        // Google Ads: the conversions, the remarketing, the conversion linker and the user data. Add the domains
+        // of the countries, e.g. https://www.google.co.jp
+        'googleAds' => [
+            'script-src' => ['https://www.googletagmanager.com', 'https://www.googleadservices.com', 'https://www.google.com'],
+            'img-src' => ['https://www.googletagmanager.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://pagead2.googlesyndication.com', 'https://www.google.com'],
+            'connect-src' => ['https://www.googletagmanager.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://pagead2.googlesyndication.com', 'https://www.google.com', 'https://ad.doubleclick.net'],
+            'frame-src' => ['https://www.googletagmanager.com'],
+        ],
+        // Floodlight
+        'floodlight' => [
+            'img-src' => ['https://www.googletagmanager.com', 'https://ad.doubleclick.net', 'https://ade.googlesyndication.com', 'https://adservice.google.com'],
+            'connect-src' => ['https://pagead2.googlesyndication.com', 'https://www.google.com', 'https://www.googleadservices.com', 'https://ad.doubleclick.net'],
+            'frame-src' => ['https://www.googletagmanager.com', 'https://*.fls.doubleclick.net'],
+        ],
+        // Google Merchant Center
+        'merchantCenter' => [
+            'script-src' => ['https://www.googletagmanager.com'],
+            'img-src' => ['https://*.merchant-center-analytics.goog'],
+            'connect-src' => ['https://*.merchant-center-analytics.goog'],
+        ],
     ];
 
     /**
@@ -93,6 +151,10 @@ class SecurityHeaders
         if ($unknown !== []) {
             throw new InvalidArgumentException(sprintf('Unknown setting of SecurityHeaders: %s', implode(', ', $unknown)));
         }
+        $unknown = array_diff((array)($settings['contentSecurityPolicyPresets'] ?? []), array_keys(self::PRESETS));
+        if ($unknown !== []) {
+            throw new InvalidArgumentException(sprintf('Unknown preset of SecurityHeaders: %s', implode(', ', $unknown)));
+        }
 
         return $settings + self::DEFAULTS;
     }
@@ -102,9 +164,10 @@ class SecurityHeaders
      *
      * @param array<string, mixed> $settings Settings of `settings()`
      * @param bool $https Whether the request is of HTTPS: `Strict-Transport-Security` is sent on HTTPS only
+     * @param string|null $nonce The nonce of the request, when `contentSecurityPolicyNonce` is on
      * @return array<string, string>
      */
-    public static function headers(array $settings, bool $https): array
+    public static function headers(array $settings, bool $https, ?string $nonce = null): array
     {
         $headers = [];
         foreach (self::HEADERS as $key => $name) {
@@ -116,7 +179,19 @@ class SecurityHeaders
                 continue;
             }
             if ($key === 'contentSecurityPolicy') {
-                $directives = self::addSources(self::directives($value), (array)($settings['contentSecurityPolicySources'] ?? []));
+                $directives = self::directives($value);
+                foreach ((array)($settings['contentSecurityPolicyPresets'] ?? []) as $preset) {
+                    $directives = self::addSources($directives, self::PRESETS[$preset]);
+                }
+                $directives = self::addSources($directives, (array)($settings['contentSecurityPolicySources'] ?? []));
+                if ($nonce !== null && !empty($settings['contentSecurityPolicyNonce'])) {
+                    // script-src-elem replaces script-src for the <script> elements
+                    $nonced = ['script-src' => "'nonce-" . $nonce . "'"];
+                    if (isset($directives['script-src-elem'])) {
+                        $nonced['script-src-elem'] = $nonced['script-src'];
+                    }
+                    $directives = self::addSources($directives, $nonced);
+                }
                 if (is_string($settings['reportUri'] ?? null) && $settings['reportUri'] !== '') {
                     $directives['report-uri'] = [$settings['reportUri']];
                 }
@@ -129,6 +204,16 @@ class SecurityHeaders
         }
 
         return $headers;
+    }
+
+    /**
+     * A new nonce, for the `nonce` attributes of the inline scripts of a response
+     *
+     * @return string
+     */
+    public static function nonce(): string
+    {
+        return base64_encode(random_bytes(16));
     }
 
     /**

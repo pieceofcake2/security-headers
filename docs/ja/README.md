@@ -11,6 +11,7 @@ Content Security Policy は、デフォルトでは報告のみのモードで�
 - [インストール](#installation)
 - [設定](#settings)
 - [Content Security Policy にサイトを追加する](#adding-sites-to-the-content-security-policy)
+- [Google タグマネージャーと Google アナリティクス](#google-tag-manager-and-google-analytics)
 - [ウェブサーバーや CDN で送るヘッダー](#headers-for-the-web-server-or-the-cdn)
 - [Content Security Policy を有効にする](#enforcing-the-content-security-policy)
 - [アクションでヘッダーを変える](#changing-the-headers-in-an-action)
@@ -73,6 +74,8 @@ Configure::write('SecurityHeaders', [
 | 設定 | ヘッダー | デフォルト | 役割 |
 | --- | --- | --- | --- |
 | `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | ページのスクリプト、スタイル、画像、フレーム、フォームの送信先を制限します。XSS に対する主な防御です。ディレクティブとソースの配列か、ポリシーの文字列で書きます。 |
+| `contentSecurityPolicyPresets` | | `[]` | ソースをポリシーに追加するサービス (例: `['googleTagManager', 'googleAnalytics']`)。[Google タグマネージャーと Google アナリティクス](#google-tag-manager-and-google-analytics) を参照してください。 |
+| `contentSecurityPolicyNonce` | | `false` | リクエストごとに新しい nonce を `script-src` に追加します。`nonce` 属性にその値を持つインラインのスクリプトが許可されます。[Google タグマネージャーと Google アナリティクス](#google-tag-manager-and-google-analytics) を参照してください。 |
 | `contentSecurityPolicySources` | | `[]` | ポリシーのディレクティブに追加するソース (ほかのサイトなど)。[Content Security Policy にサイトを追加する](#adding-sites-to-the-content-security-policy) を参照してください。 |
 | `contentSecurityPolicyReportOnly` | | `true` | ポリシーを `Content-Security-Policy-Report-Only` で送ります。ブラウザーは違反をブロックせず、コンソール (と `reportUri`) に報告します。[Content Security Policy を有効にする](#enforcing-the-content-security-policy) を参照してください。 |
 | `reportUri` | | `false` | 違反の報告を受け取る URL。ポリシーに `report-uri` として追加します。 |
@@ -134,6 +137,72 @@ Configure::write('SecurityHeaders', [
 ```
 
 一部のアクションだけで追加するには、[コンポーネントの `addSources()`](#changing-the-headers-in-an-action) を使います。
+
+## Google タグマネージャーと Google アナリティクス
+
+プリセットは、Google のサービスに必要なソースを
+[Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja) にもとづいて追加します。
+Google タグマネージャーと Google アナリティクスにはインラインのスクリプトもあり、nonce が必要です。
+
+```php
+Configure::write('SecurityHeaders', [
+    'contentSecurityPolicyPresets' => ['googleTagManager', 'googleAnalytics'],
+    'contentSecurityPolicyNonce' => true,
+]);
+```
+
+| プリセット | 対象 |
+| --- | --- |
+| `googleTagManager` | Google タグマネージャーのコンテナ |
+| `googleTagManagerPreview` | Google タグマネージャーのプレビューモード |
+| `googleAnalytics` | Google アナリティクス (Google 広告の機能なし) |
+| `googleAnalyticsWithAds` | Google アナリティクス (Google シグナルやリマーケティングなど、Google 広告の機能あり) |
+| `googleAds` | Google 広告のコンバージョン、リマーケティング、コンバージョンリンカー、ユーザー提供データ |
+| `floodlight` | Floodlight (カスタムスクリプトを含む) |
+| `merchantCenter` | Google Merchant Center |
+
+プリセットは、ガイドの `script-src-elem` ではなく `script-src` にスクリプトを追加します。Safari 15.4
+より前など、`script-src-elem` に対応していないブラウザーでも許可されるようにするためです。
+
+インラインのスクリプトには、`SecurityHeadersHelper` で nonce を付けます。`AppController` でヘルパーを
+読み込みます。
+
+```php
+public $helpers = ['SecurityHeaders.SecurityHeaders'];
+```
+
+Google タグマネージャーのスニペットに `nonce` を付けます。このスニペットは、Google のガイドと同じように、
+読み込むスクリプトにも nonce を渡します。
+
+```php
+<!-- レイアウトの <head> の中 -->
+<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;var n=d.querySelector('[nonce]');
+n&&j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'));f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-XXXXXXX');</script>
+```
+
+タグマネージャーを使わない Google アナリティクスのスニペット (`gtag.js`) も、インラインのスクリプトに
+nonce が必要です: `<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">`。ページのほかのインラインの
+スクリプトも同じように書くか、`$this->Html->scriptBlock($script, ['nonce' => $this->SecurityHeaders->nonce()])`
+で出力してください。
+
+- **国のドメイン。** Google 広告の機能は、利用者の国のドメイン (例: `www.google.co.jp`) を使います。
+  ポリシーではホストの末尾にワイルドカードを使えないため、利用者の国のドメインを
+  `contentSecurityPolicySources` で追加してください。`googleAnalyticsWithAds` では
+  `['img-src' => ['https://*.google.co.jp'], 'connect-src' => ['https://*.google.co.jp']]`
+  (`googleAds` では `https://www.google.co.jp`) です。
+- **カスタム JavaScript 変数**を Google タグマネージャーで使うには、`script-src` に `'unsafe-eval'` が
+  必要です。できればカスタムテンプレートを使ってください。
+- **nonce を使わない場合**、Google のガイドは `'unsafe-inline'` でインラインのスクリプトを許可します。
+  これは XSS のインラインのスクリプトも許可します。nonce を付けられない場合だけ、
+  `contentSecurityPolicySources` で追加してください。
+- **キャッシュ。** nonce はレスポンスごとに変わります。`CacheHelper` や CDN が HTML ごとキャッシュした
+  ページには別のレスポンスの nonce が入っているため、インラインのスクリプトがブロックされます。
+- [Tag Assistant](https://tagassistant.google.com) の「ページの問題」に、ポリシーがブロックしたリソースが
+  表示されます。
 
 ## ウェブサーバーや CDN で送るヘッダー
 

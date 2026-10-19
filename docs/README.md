@@ -11,6 +11,7 @@ off by default. The Content Security Policy is sent in report-only mode by defau
 - [Installation](#installation)
 - [Settings](#settings)
 - [Adding Sites to the Content Security Policy](#adding-sites-to-the-content-security-policy)
+- [Google Tag Manager and Google Analytics](#google-tag-manager-and-google-analytics)
 - [Headers for the Web Server or the CDN](#headers-for-the-web-server-or-the-cdn)
 - [Enforcing the Content Security Policy](#enforcing-the-content-security-policy)
 - [Changing the Headers in an Action](#changing-the-headers-in-an-action)
@@ -74,6 +75,8 @@ On by default:
 | Setting | Header | Default | What it does |
 | --- | --- | --- | --- |
 | `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | The sources of the scripts, styles, images, frames and forms of the page. It is the main defense against XSS. An array of the directives and their sources, or the policy as a string. |
+| `contentSecurityPolicyPresets` | | `[]` | The services whose sources are added to the policy, e.g. `['googleTagManager', 'googleAnalytics']`. See [Google Tag Manager and Google Analytics](#google-tag-manager-and-google-analytics). |
+| `contentSecurityPolicyNonce` | | `false` | Adds a new nonce of each request to `script-src`, for the inline scripts that have it in their `nonce` attribute. See [Google Tag Manager and Google Analytics](#google-tag-manager-and-google-analytics). |
 | `contentSecurityPolicySources` | | `[]` | The sources added to the directives of the policy, e.g. other sites. See [Adding Sites to the Content Security Policy](#adding-sites-to-the-content-security-policy). |
 | `contentSecurityPolicyReportOnly` | | `true` | Sends the policy as `Content-Security-Policy-Report-Only`: the browsers report the violations in the console (and to `reportUri`) without blocking them. See [Enforcing the Content Security Policy](#enforcing-the-content-security-policy). |
 | `reportUri` | | `false` | A URL that receives the violation reports, added to the policy as `report-uri`. |
@@ -135,6 +138,71 @@ Configure::write('SecurityHeaders', [
 ```
 
 For some actions only, use [`addSources()` of the component](#changing-the-headers-in-an-action).
+
+## Google Tag Manager and Google Analytics
+
+The presets add the sources that the services of Google need, from
+[Google's guide](https://developers.google.com/tag-platform/security/guides/csp). Google Tag Manager and
+Google Analytics also have an inline script, which needs the nonce:
+
+```php
+Configure::write('SecurityHeaders', [
+    'contentSecurityPolicyPresets' => ['googleTagManager', 'googleAnalytics'],
+    'contentSecurityPolicyNonce' => true,
+]);
+```
+
+| Preset | For |
+| --- | --- |
+| `googleTagManager` | The container of Google Tag Manager |
+| `googleTagManagerPreview` | The preview mode of Google Tag Manager |
+| `googleAnalytics` | Google Analytics, without the features of Google Ads |
+| `googleAnalyticsWithAds` | Google Analytics, with the features of Google Ads (Google Signals, remarketing) |
+| `googleAds` | Google Ads: the conversions, the remarketing, the conversion linker and the user data |
+| `floodlight` | Floodlight, with its custom scripts |
+| `merchantCenter` | Google Merchant Center |
+
+The presets add the scripts to `script-src` instead of `script-src-elem` of the guide, so that the
+browsers without `script-src-elem`, such as Safari before 15.4, allow them too.
+
+Add the nonce to the inline script with `SecurityHeadersHelper`. Load the helper in
+`AppController`:
+
+```php
+public $helpers = ['SecurityHeaders.SecurityHeaders'];
+```
+
+Then add `nonce` to the snippet of Google Tag Manager. This snippet also passes the nonce to the
+script that it loads, as in Google's guide:
+
+```php
+<!-- In <head> of the layout -->
+<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;var n=d.querySelector('[nonce]');
+n&&j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'));f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-XXXXXXX');</script>
+```
+
+The snippet of Google Analytics without Tag Manager (`gtag.js`) needs it on its inline script too:
+`<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">`. Write the other inline scripts of your
+pages in the same way, or with `$this->Html->scriptBlock($script, ['nonce' => $this->SecurityHeaders->nonce()])`.
+
+- **The domains of the countries.** The features of Google Ads use the domain of the country of the
+  user, e.g. `www.google.co.jp`, and a policy cannot have a wildcard at the end of a host. Add the
+  ones of your users with `contentSecurityPolicySources`, e.g.
+  `['img-src' => ['https://*.google.co.jp'], 'connect-src' => ['https://*.google.co.jp']]` for
+  `googleAnalyticsWithAds` (`https://www.google.co.jp` for `googleAds`).
+- **Custom JavaScript variables** of Google Tag Manager need `'unsafe-eval'` in `script-src`. Use
+  custom templates instead if you can.
+- **Without the nonce**, Google's guide allows the inline scripts with `'unsafe-inline'`, which allows
+  the inline scripts of an XSS too. Add it with `contentSecurityPolicySources` only if you cannot
+  add the nonce.
+- **Caches.** A nonce is new for each response. A page cached with its HTML, by `CacheHelper` or by a
+  CDN, has the nonce of another response, so its inline scripts are blocked.
+- [Tag Assistant](https://tagassistant.google.com) lists the resources that the policy blocks, in
+  *Page issues*.
 
 ## Headers for the Web Server or the CDN
 

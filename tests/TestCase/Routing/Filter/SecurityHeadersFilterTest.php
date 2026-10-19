@@ -106,4 +106,23 @@ class SecurityHeadersFilterTest extends CakeTestCase
 
         $this->assertSame('SAMEORIGIN', $response->header()['X-Frame-Options']);
     }
+
+    public function testNonce(): void
+    {
+        Configure::write('SecurityHeaders.contentSecurityPolicyNonce', true);
+        $request = new CakeRequest('/posts');
+        $response = $this->dispatch($request);
+        $nonce = $request->param(SecurityHeadersFilter::NONCE);
+
+        $this->assertIsString($nonce);
+        $this->assertStringEndsWith("; script-src 'self' 'nonce-" . $nonce . "'", $response->header()['Content-Security-Policy-Report-Only']);
+    }
+
+    public function testNoNonce(): void
+    {
+        $request = new CakeRequest('/posts');
+        $this->dispatch($request);
+
+        $this->assertFalse($request->param(SecurityHeadersFilter::NONCE));
+    }
 }

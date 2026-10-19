@@ -134,4 +134,62 @@ class SecurityHeadersTest extends CakeTestCase
             $headers['Content-Security-Policy-Report-Only'],
         );
     }
+
+    public function testContentSecurityPolicyPresets(): void
+    {
+        $headers = SecurityHeaders::headers(SecurityHeaders::settings([
+            'contentSecurityPolicy' => ['default-src' => ["'self'"]],
+            'contentSecurityPolicyPresets' => ['googleTagManager', 'googleAnalytics'],
+            'contentSecurityPolicySources' => ['connect-src' => 'https://api.example.com'],
+        ]), true);
+
+        $this->assertSame(
+            "default-src 'self'; script-src 'self' https://www.googletagmanager.com; img-src 'self' https://www.googletagmanager.com https://*.google-analytics.com; connect-src 'self' https://www.googletagmanager.com https://www.google.com https://*.google-analytics.com https://*.google.com https://api.example.com",
+            $headers['Content-Security-Policy-Report-Only'],
+        );
+    }
+
+    public function testEveryPreset(): void
+    {
+        foreach (array_keys(SecurityHeaders::PRESETS) as $preset) {
+            $policy = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicyPresets' => [$preset]]), true)['Content-Security-Policy-Report-Only'];
+
+            $this->assertStringStartsWith("default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'; ", $policy, $preset);
+            $this->assertStringNotContainsString('script-src-elem', $policy, $preset);
+        }
+    }
+
+    public function testUnknownPreset(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unknown preset of SecurityHeaders: googleTagManger');
+        SecurityHeaders::settings(['contentSecurityPolicyPresets' => ['googleTagManager', 'googleTagManger']]);
+    }
+
+    public function testNonce(): void
+    {
+        $settings = SecurityHeaders::settings([
+            'contentSecurityPolicy' => ['default-src' => ["'self'"]],
+            'contentSecurityPolicyReportOnly' => false,
+            'contentSecurityPolicyNonce' => true,
+        ]);
+
+        $this->assertSame("default-src 'self'; script-src 'self' 'nonce-abc'", SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy']);
+        $this->assertSame("default-src 'self'", SecurityHeaders::headers($settings, true)['Content-Security-Policy']);
+        $settings['contentSecurityPolicySources'] = ['script-src-elem' => 'https://cdn.example.com'];
+        $this->assertSame(
+            "default-src 'self'; script-src-elem 'self' https://cdn.example.com 'nonce-abc'; script-src 'self' 'nonce-abc'",
+            SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy'],
+        );
+        $settings['contentSecurityPolicyNonce'] = false;
+        $this->assertStringNotContainsString('nonce', SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy']);
+    }
+
+    public function testNewNonce(): void
+    {
+        $nonce = SecurityHeaders::nonce();
+
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9+\/]{22}==$/', $nonce);
+        $this->assertNotSame($nonce, SecurityHeaders::nonce());
+    }
 }
