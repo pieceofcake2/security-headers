@@ -1,0 +1,51 @@
+name: Presets
+
+# The CI skips the changes of the docs, so this checks the tables of the presets pages against the classes when
+# only the pages change.
+on:
+  push:
+    branches:
+      - '1.x'
+    paths:
+      - 'docs/presets.md'
+      - 'docs/ja/presets.md'
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'docs/presets.md'
+      - 'docs/ja/presets.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  presets:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Install Composer Packages
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Make temporary directories writable
+        run: |
+          chmod -R 777 ./vendor/pieceofcake2/app/tmp
+          chmod -R 777 ./vendor/pieceofcake2/app/logs
+
+      - name: Check the presets pages
+        run: ./vendor/bin/phpunit --filter testPresetsOfTheDocs --colors=always

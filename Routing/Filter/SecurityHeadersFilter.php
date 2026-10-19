@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 App::uses('DispatcherFilter', 'Routing');
+App::uses('Router', 'Routing');
 App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
 
 /**
@@ -52,6 +53,17 @@ class SecurityHeadersFilter extends DispatcherFilter
         $request = $event->data['request'];
         /** @var \CakeResponse $response */
         $response = $event->data['response'];
+        if (!empty($event->data['additionalParams']['requested'])) {
+            // A request of requestAction(): its response is not sent to the browser, and what it renders goes into
+            // the response of the request that has the headers, so it uses the nonce of that one
+            $main = Router::getRequest();
+            $nonce = $main?->param(self::NONCE);
+            if (is_string($nonce)) {
+                $request->addParams([self::NONCE => $nonce]);
+            }
+
+            return null;
+        }
         $settings = SecurityHeaders::settings();
         $send = self::$send ?? static function (string $name, ?string $value): void {
             if (headers_sent()) {

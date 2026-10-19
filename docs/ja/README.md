@@ -61,9 +61,10 @@ Configure::write('Dispatcher.filters', [
 ## 設定
 
 `config/bootstrap.php` で `Configure::write('SecurityHeaders', [...])` を書いて設定を変えます。設定の値は
-そのヘッダーの値で、`false` にすると送りません。書かなかった設定はデフォルトのままです。未知の設定は
-`InvalidArgumentException` を投げます。設定名の誤字で、ヘッダーが気づかないままデフォルトになることを
-防ぐためです。
+そのヘッダーの値で、`false` にすると送りません。書かなかった設定はデフォルトのままです。未知の設定、型の違う値
+(ヘッダーに配列、`true` の代わりに `1` など)、ポリシーの未知のディレクティブは `InvalidArgumentException` を
+投げます。誤字で、ヘッダーが気づかないままデフォルトになったり、ブラウザーが無視するディレクティブが残ったり
+することを防ぐためです。
 
 ```php
 Configure::write('SecurityHeaders', [
@@ -114,6 +115,7 @@ Configure::write('SecurityHeaders', [
 ```php
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAnalytics;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 Configure::write('SecurityHeaders', [
     'contentSecurityPolicyAllow' => [
@@ -122,20 +124,19 @@ Configure::write('SecurityHeaders', [
         'cdn' => [
             'script-src' => ['https://cdn.example.com'],
         ],
-        'youtube' => [
-            'frame-src' => ['https://www.youtube-nocookie.com'],
-        ],
+        YouTube::class,
     ],
 ]);
 ```
 
 ポリシーにないディレクティブは、ブラウザーが代わりに使うディレクティブ (`script-src` なら `default-src`)
 のソースから始めるので、`'self'` は許可されたままです。ソースを追加したディレクティブからは `'none'`
-を取り除きます。デフォルトのポリシーに上の `cdn` と `youtube` を追加すると、次のようになります。
+を取り除きます。デフォルトのポリシーに上の `cdn` と `YouTube::class` を追加すると、次のようになります。
 
 ```text
 default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none';
-script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-nocookie.com
+script-src 'self' https://cdn.example.com https://www.youtube.com; img-src 'self' https://i.ytimg.com;
+frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com
 ```
 
 プラグインには、Google、Adobe、Meta (Facebook、Instagram)、X、TikTok、LINE、YouTube、Yahoo! JAPAN、Microsoft の
