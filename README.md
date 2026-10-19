@@ -71,8 +71,8 @@ Configure::write('SecurityHeaders', [
 ```
 
 A setting is the value of its header, or `false` not to send it. Classes of the plugin allow
-Google Tag Manager, Google Analytics, Google Ads, Google Maps, YouTube, Facebook and TikTok in the Content
-Security Policy. See
+Google Tag Manager, Google Analytics, Google Ads, Google Maps, YouTube, Facebook, TikTok, LINE and Adobe in
+the Content Security Policy. See
 [Settings](docs/README.md#settings).
 
 ## Contributing

@@ -134,6 +134,7 @@ script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-
 プラグインのクラス (`PieceOfCake2\SecurityHeaders\ContentSecurityPolicy`) は、サービスに必要なソースです。
 Google のタグは [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)、`GoogleMaps` は
 [Maps JavaScript API のガイド](https://developers.google.com/maps/documentation/javascript/content-security-policy?hl=ja)
+、Adobe は [Adobe のガイド](https://experienceleague.adobe.com/ja/docs/experience-platform/tags/client-side/content-security-policy)
 にもとづき、ほかはサービスの埋め込みコードから作って、ポリシーを有効にした Chrome で確かめています。
 
 | クラス | 対象 |
@@ -152,6 +153,11 @@ Google のタグは [Google のガイド](https://developers.google.com/tag-plat
 | `MetaPixel` | Meta ピクセル (Facebook ピクセル) |
 | `TikTok` | TikTok の埋め込み動画とプロフィール |
 | `TikTokPixel` | TikTok ピクセル |
+| `Line` | LINE のソーシャルプラグイン (「LINEで送る」ボタン、「友だち追加」ボタン) |
+| `LineTag` | LINE 広告の LINE Tag |
+| `AdobeTags` | Adobe Experience Platform Tags (旧 Adobe Launch) のライブラリ |
+| `AdobeAnalytics` | Adobe Analytics (AppMeasurement) と Experience Cloud ID サービス |
+| `AdobeWebSdk` | Adobe Experience Platform の Web SDK |
 
 スクリプトは、Google のガイドの `script-src-elem` ではなく `script-src` に追加します。Safari 15.4 より前など、
 `script-src-elem` に対応していないブラウザーでも許可されるようにするためです。サイトのほかにも必要なものがある
@@ -159,8 +165,11 @@ Google のタグは [Google のガイド](https://developers.google.com/tag-plat
 
 - `GoogleMaps` は、Google のガイドと同じく、`script-src` に `'unsafe-eval'`、`style-src` に `'unsafe-inline'` を
   追加します。API のコールバックなどのインラインのスクリプトには nonce が必要です。
-- `Facebook` と `TikTok` は `style-src` に `'unsafe-inline'` を追加します。スクリプトがページにスタイルを追加し、
-  TikTok の埋め込みコードには `style` 属性があるためです。
+- `Facebook`、`TikTok`、`Line` は `style-src` に `'unsafe-inline'` を追加します。スクリプトがページにスタイルを
+  追加し、TikTok と LINE の埋め込みコードには `style` 属性があるためです。
+- `AdobeTags` はライブラリだけです。拡張機能のクラス (`AdobeAnalytics` など) と、カスタムコードのための nonce
+  (Core 拡張機能に nonce のデータ要素を設定) も追加してください。自分のドメイン (CNAME) のトラッキングサーバーや
+  エッジドメインは、名前を付けて追加します。
 - サービスはホストを変えることがあります。クラスにないホストがブラウザーのコンソールに報告されたら、名前を付けて
   `contentSecurityPolicyAllow` に追加してください。
 
