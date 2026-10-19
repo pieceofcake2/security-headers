@@ -26,7 +26,7 @@ Configure::write('SecurityHeaders', [
   does not have, add it to `contentSecurityPolicyAllow` with a name, and tell us in an issue.
 
 - [Tag Managers and Analytics](#tag-managers-and-analytics): [`GoogleTagManager`](#googletagmanager), [`GoogleTagManagerPreview`](#googletagmanagerpreview), [`GoogleAnalytics`](#googleanalytics), [`GoogleAnalyticsWithAds`](#googleanalyticswithads), [`AdobeTags`](#adobetags), [`AdobeAnalytics`](#adobeanalytics), [`AdobeWebSdk`](#adobewebsdk)
-- [Conversion Tags (CV) of the Ads](#conversion-tags): [`GoogleAds`](#googleads), [`Floodlight`](#floodlight), [`MerchantCenter`](#merchantcenter), [`MetaPixel`](#metapixel), [`TikTokPixel`](#tiktokpixel), [`XPixel`](#xpixel), [`LineTag`](#linetag), [`YahooAds`](#yahooads), [`MicrosoftAds`](#microsoftads)
+- [Conversion Tags (CV) of the Ads](#conversion-tags): [`GoogleAds`](#googleads), [`Floodlight`](#floodlight), [`MerchantCenter`](#merchantcenter), [`MetaPixel`](#metapixel), [`TikTokPixel`](#tiktokpixel), [`XPixel`](#xpixel), [`LineTag`](#linetag), [`YahooJapanAds`](#yahoojapanads), [`MicrosoftAds`](#microsoftads)
 - [Embedded Contents](#embeds): [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
 
 ## Tag Managers and Analytics {#tag-managers-and-analytics}
@@ -228,9 +228,9 @@ From the base code of LINE. **Checked every week.**
 | `img-src` | `https://tr.line.me` |
 | `connect-src` | `https://tr.line.me` |
 
-### `YahooAds` {#yahooads}
+### `YahooJapanAds` {#yahoojapanads}
 
-The conversion tags and the site retargeting tags of Yahoo! JAPAN Ads, of the search ads and the display ads, with the site general tag (ytag.js). **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
+The conversion tags and the site retargeting tags of Yahoo! JAPAN Ads, of the search ads and the display ads, with the site general tag (ytag.js). Named `YahooAds` before 1.0.3: that name still works, but is deprecated. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [the announcement of Yahoo! JAPAN Ads](https://www.lycbiz.com/jp/news/yahoo-ads/20230215) and the tags. **Checked every week.**
 

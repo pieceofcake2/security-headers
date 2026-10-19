@@ -2,6 +2,8 @@
 
 ## 1.0.3
 
+- `YahooAds` is renamed `YahooJapanAds`: its tags are those of Yahoo! JAPAN Ads, not of the ads of Yahoo.
+  `YahooAds` still works, but is deprecated
 - The presets whose code has an inline script, e.g. `GoogleTagManager` and `MetaPixel`, turn on the nonce
   (`NeedsNonce`): `contentSecurityPolicyNonce` is `null` by default, `true` and `false` still turn it on and off
 - A class of `contentSecurityPolicyAllow` that needs arguments to be created throws an
