@@ -3,6 +3,8 @@
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\NeedsNonce;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YahooAds;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YahooJapanAds;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
@@ -182,7 +184,7 @@ class SecurityHeadersTest extends CakeTestCase
     public function testEveryClassOfThePlugin(): void
     {
         $classes = array_map(static fn(string $file): string => 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . basename($file, '.php'), glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: []);
-        $classes = array_values(array_filter($classes, static fn(string $class): bool => !interface_exists($class)));
+        $classes = array_values(array_filter($classes, [self::class, 'isPreset']));
 
         $this->assertCount(24, $classes);
         foreach ($classes as $class) {
@@ -246,7 +248,7 @@ class SecurityHeadersTest extends CakeTestCase
             foreach (glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: [] as $path) {
                 $name = basename($path, '.php');
                 $class = 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . $name;
-                if (interface_exists($class)) {
+                if (!self::isPreset($class)) {
                     continue;
                 }
                 $this->assertMatchesRegularExpression('/^### `' . $name . '`/m', $docs, $file . ': ' . $name);
@@ -338,7 +340,7 @@ class SecurityHeadersTest extends CakeTestCase
         $needs = [];
         foreach (glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: [] as $path) {
             $class = 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . basename($path, '.php');
-            if (!interface_exists($class) && is_subclass_of($class, NeedsNonce::class)) {
+            if (self::isPreset($class) && is_subclass_of($class, NeedsNonce::class)) {
                 $needs[] = basename($path, '.php');
             }
         }
@@ -346,7 +348,7 @@ class SecurityHeadersTest extends CakeTestCase
 
         $this->assertSame([
             'Floodlight', 'GoogleAds', 'GoogleAnalytics', 'GoogleAnalyticsWithAds', 'GoogleMaps', 'GoogleTagManager',
-            'LineTag', 'MerchantCenter', 'MetaPixel', 'MicrosoftAds', 'TikTokPixel', 'XPixel', 'YahooAds',
+            'LineTag', 'MerchantCenter', 'MetaPixel', 'MicrosoftAds', 'TikTokPixel', 'XPixel', 'YahooJapanAds',
         ], $needs);
     }
 
@@ -360,5 +362,27 @@ class SecurityHeadersTest extends CakeTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('must be created without arguments: SecurityHeadersTestWithArguments');
         SecurityHeaders::settings(['contentSecurityPolicyAllow' => [SecurityHeadersTestWithArguments::class]]);
+    }
+
+    /**
+     * A class of the plugin that is a preset: not an interface, nor a deprecated name of another preset
+     *
+     * @param string $class Class
+     * @return bool
+     */
+    private static function isPreset(string $class): bool
+    {
+        return !interface_exists($class) && !str_contains((string)(new ReflectionClass($class))->getDocComment(), '@deprecated');
+    }
+
+    /**
+     * The deprecated name of YahooJapanAds keeps working
+     *
+     * @return void
+     */
+    public function testYahooAds(): void
+    {
+        $this->assertSame((new YahooJapanAds())->sources(), (new YahooAds())->sources());
+        $this->assertTrue(SecurityHeaders::usesNonce(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [YahooAds::class]])));
     }
 }

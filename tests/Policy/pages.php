@@ -18,7 +18,7 @@ use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\TikTok;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\TikTokPixel;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\X;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\XPixel;
-use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YahooAds;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YahooJapanAds;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 return [
@@ -147,8 +147,8 @@ _lt('init',{customerType:'lap',tagId:'00000000-0000-0000-0000-000000000000'});_l
 HTML,
         'loads' => ['https://d.line-scdn.net/n/line_tag/public/release/v1/lt.js'],
     ],
-    'yahoo-ads' => [
-        'allow' => [YahooAds::class],
+    'yahoo-japan-ads' => [
+        'allow' => [YahooJapanAds::class],
         'html' => <<<'HTML'
 <script nonce="{nonce}" async src="https://s.yimg.jp/images/listing/tool/cv/ytag.js"></script>
 <script nonce="{nonce}">window.yjDataLayer=window.yjDataLayer||[];function ytag(){yjDataLayer.push(arguments);}

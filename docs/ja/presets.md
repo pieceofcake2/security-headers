@@ -26,7 +26,7 @@ Configure::write('SecurityHeaders', [
   付けて `contentSecurityPolicyAllow` に追加し、issue で知らせてください。
 
 - [タグマネージャーとアクセス解析](#tag-managers-and-analytics): [`GoogleTagManager`](#googletagmanager), [`GoogleTagManagerPreview`](#googletagmanagerpreview), [`GoogleAnalytics`](#googleanalytics), [`GoogleAnalyticsWithAds`](#googleanalyticswithads), [`AdobeTags`](#adobetags), [`AdobeAnalytics`](#adobeanalytics), [`AdobeWebSdk`](#adobewebsdk)
-- [広告のコンバージョン (CV) タグ](#conversion-tags): [`GoogleAds`](#googleads), [`Floodlight`](#floodlight), [`MerchantCenter`](#merchantcenter), [`MetaPixel`](#metapixel), [`TikTokPixel`](#tiktokpixel), [`XPixel`](#xpixel), [`LineTag`](#linetag), [`YahooAds`](#yahooads), [`MicrosoftAds`](#microsoftads)
+- [広告のコンバージョン (CV) タグ](#conversion-tags): [`GoogleAds`](#googleads), [`Floodlight`](#floodlight), [`MerchantCenter`](#merchantcenter), [`MetaPixel`](#metapixel), [`TikTokPixel`](#tiktokpixel), [`XPixel`](#xpixel), [`LineTag`](#linetag), [`YahooJapanAds`](#yahoojapanads), [`MicrosoftAds`](#microsoftads)
 - [埋め込み](#embeds): [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
 
 <a id="tag-managers-and-analytics"></a>
@@ -260,11 +260,11 @@ LINE 広告の LINE Tag。**nonce をオンにします**。コードにイン�
 | `img-src` | `https://tr.line.me` |
 | `connect-src` | `https://tr.line.me` |
 
-<a id="yahooads"></a>
+<a id="yahoojapanads"></a>
 
-### `YahooAds`
+### `YahooJapanAds`
 
-Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン測定タグとサイトリターゲティングタグ、サイトジェネラルタグ (ytag.js)。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
+Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン測定タグとサイトリターゲティングタグ、サイトジェネラルタグ (ytag.js)。1.0.3 より前の名前は `YahooAds` です。その名前も使えますが、非推奨です。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
 根拠: [Yahoo!広告のお知らせ](https://www.lycbiz.com/jp/news/yahoo-ads/20230215) とタグ。**毎週確認。**
 
