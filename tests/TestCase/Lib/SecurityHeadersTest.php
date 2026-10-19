@@ -247,4 +247,53 @@ class SecurityHeadersTest extends CakeTestCase
             }
         }
     }
+
+    /**
+     * A typo in the name of a directive throws, as the browsers would ignore the directive
+     *
+     * @return void
+     */
+    public function testUnknownDirective(): void
+    {
+        $typos = [
+            ['contentSecurityPolicy', ['default-src' => ["'self'"], 'scirpt-src' => ["'self'"]], 'contentSecurityPolicy: scirpt-src'],
+            ['contentSecurityPolicy', "default-src 'self'; img-scr data:", 'contentSecurityPolicy: img-scr'],
+            ['contentSecurityPolicyAllow', ['cdn' => ['script-src' => 'https://cdn.example.com', 'fram-src' => 'https://x.example.com']], 'cdn: fram-src'],
+        ];
+        foreach ($typos as [$key, $value, $message]) {
+            try {
+                SecurityHeaders::settings([$key => $value]);
+                $this->fail('No exception for ' . $message);
+            } catch (InvalidArgumentException $exception) {
+                $this->assertStringEndsWith('in ' . $message, $exception->getMessage());
+            }
+        }
+        $settings = SecurityHeaders::settings(['contentSecurityPolicy' => "default-src 'self'; Upgrade-Insecure-Requests; report-to csp"]);
+        $this->assertSame("default-src 'self'; upgrade-insecure-requests; report-to csp", SecurityHeaders::headers($settings, true)['Content-Security-Policy-Report-Only']);
+    }
+
+    /**
+     * A value of another type than the setting takes throws, instead of sending "Array" or "1"
+     *
+     * @return void
+     */
+    public function testInvalidValue(): void
+    {
+        $invalid = [
+            ['xFrameOptions', ['DENY'], 'array'],
+            ['strictTransportSecurity', 31536000, 'int'],
+            ['contentSecurityPolicyNonce', 1, 'int'],
+            ['contentSecurityPolicyReportOnly', 'false', 'string'],
+            ['contentSecurityPolicyAllow', 'cdn', 'string'],
+            ['contentSecurityPolicy', true, 'bool'],
+        ];
+        foreach ($invalid as [$key, $value, $type]) {
+            try {
+                SecurityHeaders::settings([$key => $value]);
+                $this->fail('No exception for ' . $key);
+            } catch (InvalidArgumentException $exception) {
+                $this->assertSame(sprintf('Invalid value of SecurityHeaders.%s: %s', $key, $type), $exception->getMessage());
+            }
+        }
+    }
 }

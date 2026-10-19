@@ -4,6 +4,9 @@
 
 - With `contentSecurityPolicyNonce`, an element rendered with `requestAction()` gets the nonce of the page: it got
   a nonce of its own, which the policy of the page did not allow, so its inline scripts were blocked
+- A value of another type than a setting takes (e.g. an array for a header, `1` for `true`) and an unknown
+  directive of the policy, e.g. `scirpt-src`, throw an `InvalidArgumentException`, instead of sending `Array` or a
+  directive that the browsers ignore
 
 ## 1.0.2
 

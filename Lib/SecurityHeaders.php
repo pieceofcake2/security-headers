@@ -64,6 +64,17 @@ class SecurityHeaders
     ];
 
     /**
+     * The directives of the Content Security Policy, from CSP Level 3 and the specifications that it refers to
+     */
+    public const DIRECTIVES = [
+        'default-src', 'script-src', 'script-src-elem', 'script-src-attr', 'style-src', 'style-src-elem',
+        'style-src-attr', 'img-src', 'font-src', 'connect-src', 'media-src', 'object-src', 'frame-src', 'child-src',
+        'worker-src', 'manifest-src', 'fenced-frame-src', 'base-uri', 'form-action', 'frame-ancestors', 'sandbox',
+        'report-uri', 'report-to', 'upgrade-insecure-requests', 'block-all-mixed-content',
+        'require-trusted-types-for', 'trusted-types', 'webrtc',
+    ];
+
+    /**
      * The directives that the browsers replace with another one when the policy does not have them
      */
     public const FALLBACKS = [
@@ -89,7 +100,8 @@ class SecurityHeaders
      *
      * @param array<string, mixed>|null $settings Settings, default: those of Configure
      * @return array<string, mixed>
-     * @throws \InvalidArgumentException When a setting is unknown
+     * @throws \InvalidArgumentException When a setting is unknown or has a value of another type, or a directive of
+     *   the policy is unknown
      */
     public static function settings(?array $settings = null): array
     {
@@ -98,9 +110,42 @@ class SecurityHeaders
         if ($unknown !== []) {
             throw new InvalidArgumentException(sprintf('Unknown setting of SecurityHeaders: %s', implode(', ', $unknown)));
         }
-        self::allowed((array)($settings['contentSecurityPolicyAllow'] ?? []));
+        foreach ($settings as $key => $value) {
+            $valid = match ($key) {
+                'contentSecurityPolicy' => is_string($value) || is_array($value) || $value === false || $value === null,
+                'contentSecurityPolicyAllow' => is_array($value),
+                'contentSecurityPolicyNonce', 'contentSecurityPolicyReportOnly', 'removePoweredBy' => is_bool($value),
+                default => is_string($value) || $value === false || $value === null,
+            };
+            if (!$valid) {
+                throw new InvalidArgumentException(sprintf('Invalid value of SecurityHeaders.%s: %s', $key, get_debug_type($value)));
+            }
+        }
+        $policy = $settings['contentSecurityPolicy'] ?? null;
+        if (is_string($policy) || is_array($policy)) {
+            self::assertDirectives(self::directives($policy), 'contentSecurityPolicy');
+        }
+        foreach (self::allowed((array)($settings['contentSecurityPolicyAllow'] ?? [])) as $name => $sources) {
+            self::assertDirectives($sources, $name);
+        }
 
         return $settings + self::DEFAULTS;
+    }
+
+    /**
+     * Checks the names of the directives, so that a typo does not leave a directive that the browsers ignore
+     *
+     * @param array<string, mixed> $directives Sources by directive
+     * @param string $of The setting or the name of the sources, for the message
+     * @return void
+     * @throws \InvalidArgumentException When a directive is unknown
+     */
+    private static function assertDirectives(array $directives, string $of): void
+    {
+        $unknown = array_diff(array_map(static fn($directive): string => strtolower((string)$directive), array_keys($directives)), self::DIRECTIVES);
+        if ($unknown !== []) {
+            throw new InvalidArgumentException(sprintf('Unknown directive of SecurityHeaders in %s: %s', $of, implode(', ', $unknown)));
+        }
     }
 
     /**
