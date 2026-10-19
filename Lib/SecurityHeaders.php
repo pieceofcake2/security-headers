@@ -231,7 +231,7 @@ class SecurityHeaders
                 }
             }
             $current = array_values(array_diff($directives[$directive], ["'none'"]));
-            $directives[$directive] = array_values(array_unique([...$current, ...(array)$added]));
+            $directives[$directive] = array_values(array_unique(array_merge($current, array_values((array)$added))));
         }
 
         return $directives;

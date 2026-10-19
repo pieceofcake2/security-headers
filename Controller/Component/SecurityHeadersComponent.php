@@ -68,9 +68,9 @@ class SecurityHeadersComponent extends Component
     public function addSources(string $directive, array|string $sources): void
     {
         $directive = strtolower($directive);
-        $this->sources[$directive] = [...$this->sources[$directive] ?? [], ...(array)$sources];
+        $this->sources[$directive] = array_merge($this->sources[$directive] ?? [], array_values((array)$sources));
         $settings = SecurityHeaders::settings();
-        $settings['contentSecurityPolicyAllow'] = [...(array)$settings['contentSecurityPolicyAllow'], self::class => $this->sources];
+        $settings['contentSecurityPolicyAllow'] = array_merge((array)$settings['contentSecurityPolicyAllow'], [self::class => $this->sources]);
         $request = $this->controller?->request;
         $nonce = $request?->param(SecurityHeadersFilter::NONCE);
         foreach (SecurityHeaders::headers($settings, $request !== null && $request->is('ssl'), is_string($nonce) ? $nonce : null) as $name => $value) {
