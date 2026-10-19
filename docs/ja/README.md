@@ -97,7 +97,7 @@ Configure::write('SecurityHeaders', [
 | 設定 | ヘッダー | 例 | オフの理由 |
 | --- | --- | --- | --- |
 | `strictTransportSecurity` | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | ウェブサーバーや CDN で送るものです。[下記](#headers-for-the-web-server-or-the-cdn)を参照してください。 |
-| `cacheControl` | `Cache-Control` | `no-store` | ウェブサーバーや CDN、各アクションで決めるものです。セッションのあるページには PHP が `no-store, no-cache, must-revalidate` を送り (デフォルトの `session.cache_limiter`)、アクションは `$this->response->cache()` や `disableCache()` で設定します。 |
+| `cacheControl` | `Cache-Control` | `no-store` | ウェブサーバーや CDN、各アクションで決めるものです。キャッシュすべきファイルも含め、すべてのレスポンスの `Cache-Control` を置き換えてしまいます。アクションは `$this->response->cache()` や `disableCache()` で設定します。セッションのあるページは [セッションのあるページ](#notes) を参照してください。 |
 | `crossOriginEmbedderPolicy` | `Cross-Origin-Embedder-Policy` | `require-corp` | `Cross-Origin-Resource-Policy` や CORS のヘッダーを送らないほかのサイトの画像、スクリプト、フレームが表示されなくなります。必要なのは `SharedArrayBuffer` や精度の高いタイマーを使う場合だけです。 |
 | `xXssProtection` | `X-XSS-Protection` | `0` | 廃止されたヘッダーです。モダンなブラウザーは無視し、古いブラウザーのフィルターは悪用されることがありました。スキャナーに求められた場合は `0` を送ってください。 |
 
@@ -318,6 +318,17 @@ class WidgetsController extends AppController
   `same-site` か `cross-origin` にしてください。API の `fetch()` など、CORS のリクエストには影響しません。
 - **エラーページ。** エラーページは別のレスポンスを使うため、フィルターは `header()` でもヘッダーを
   送ります。あとからアプリケーションや CakePHP が同じ名前のヘッダーを送ると、そちらに置き換わります。
+- **セッションのあるページ。** CakePHP 2 は、Internet Explorer 8 以前のために、PHP のキャッシュリミッターを
+  デフォルトで `must-revalidate` にします。PHP はこの値を知らないのでキャッシュのヘッダーを送らず、ログイン中の
+  ページに `Cache-Control` が付きません。ログアウトしたあとにブラウザーがページを再び表示したり、共有のキャッシュが
+  ページを保存したりできます。CakePHP 5 と同じく PHP のキャッシュリミッターを使うよう、`config/core.php` で
+  設定してください。
+
+  ```php
+  Configure::write('Session.cacheLimiter', 'nocache');
+  ```
+
+  これで PHP は、セッションを開始するページに `Cache-Control: no-store, no-cache, must-revalidate` を送ります。
 
 <a id="without-the-plugin"></a>
 

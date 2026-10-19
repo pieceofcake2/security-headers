@@ -94,7 +94,7 @@ Off by default:
 | Setting | Header | Example | Why it is off |
 | --- | --- | --- | --- |
 | `strictTransportSecurity` | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | For the web server or the CDN. See [below](#headers-for-the-web-server-or-the-cdn). |
-| `cacheControl` | `Cache-Control` | `no-store` | For the web server or the CDN, and for the actions: PHP sends `no-store, no-cache, must-revalidate` for the pages with a session (the default `session.cache_limiter`), and the actions set their own with `$this->response->cache()` or `disableCache()`. |
+| `cacheControl` | `Cache-Control` | `no-store` | For the web server or the CDN, and for the actions: it would replace the `Cache-Control` of every response, also of the files that should be cached, and the actions set their own with `$this->response->cache()` or `disableCache()`. For the pages with a session, see [Pages with a session](#notes). |
 | `crossOriginEmbedderPolicy` | `Cross-Origin-Embedder-Policy` | `require-corp` | Breaks the images, scripts and frames of other sites that do not send `Cross-Origin-Resource-Policy` or CORS headers. Only needed for `SharedArrayBuffer` and precise timers. |
 | `xXssProtection` | `X-XSS-Protection` | `0` | Obsolete: the modern browsers ignore it, and the filter of the old ones could be abused. If a scanner asks for it, send `0`. |
 
@@ -303,6 +303,16 @@ Write the name of the header that the filter sends: in report-only mode, it is
   actions with the component. The requests with CORS, e.g. `fetch()` of an API, are not affected.
 - **Error pages.** The error pages get a response of their own, so the filter also sends the headers
   with `header()`. A header of the same name that the application or CakePHP sends later replaces it.
+- **Pages with a session.** CakePHP 2 gives PHP the cache limiter `must-revalidate` by default, for Internet
+  Explorer 8 and before. PHP does not know this value and sends no cache header, so the pages of a logged-in user
+  have no `Cache-Control`: a browser can show them again after the logout, and a shared cache can store them. Use
+  the cache limiter of PHP, as CakePHP 5 does, in `config/core.php`:
+
+  ```php
+  Configure::write('Session.cacheLimiter', 'nocache');
+  ```
+
+  PHP then sends `Cache-Control: no-store, no-cache, must-revalidate` with the pages that start a session.
 
 ## Without the Plugin
 
