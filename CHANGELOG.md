@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 1.0.2
+
+- `TikTok` allows `*.tiktokcdn-us.com`: TikTok serves the files of its embeds from there to the users in the
+  United States, and from `*.ttwstatic.com` in Japan, so the embeds were blocked for American visitors
+- The presets have a page of their own in the docs, with the sources of each one, where they come from and
+  whether the weekly check covers it
+- The presets are checked every week and at each release, in Chrome against the services
+- The links of the Japanese docs to their sections work
+
 ## 1.0.1
 
 - New classes of `contentSecurityPolicyAllow`: `GoogleMaps` (Maps JavaScript API), `GoogleMapsEmbed`, `YouTube`,
