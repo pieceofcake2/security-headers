@@ -17,6 +17,7 @@ off by default. The Content Security Policy is sent in report-only mode by defau
 - [Changing the Headers in an Action](#changing-the-headers-in-an-action)
 - [Notes](#notes)
 - [Without the Plugin](#without-the-plugin)
+- [Presets](presets.md): the classes of the services and their sources
 
 ## Installation
 
@@ -132,67 +133,10 @@ default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self';
 script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-nocookie.com
 ```
 
-The classes of the plugin, in `PieceOfCake2\SecurityHeaders\ContentSecurityPolicy`, are the sources
-that the services need. Those of Google's tags are from
-[Google's guide](https://developers.google.com/tag-platform/security/guides/csp), `GoogleMaps` from
-[the guide of the Maps JavaScript API](https://developers.google.com/maps/documentation/javascript/content-security-policy),
-those of Adobe from [Adobe's guides](https://experienceleague.adobe.com/en/docs/experience-platform/tags/client-side/content-security-policy),
-and the others from the embed codes of the services, checked with an enforced policy in Chrome:
-
-**Tag managers and analytics**
-
-| Class | For |
-| --- | --- |
-| `GoogleTagManager` | The container of Google Tag Manager |
-| `GoogleTagManagerPreview` | The preview mode of Google Tag Manager |
-| `GoogleAnalytics` | Google Analytics, without the features of Google Ads |
-| `GoogleAnalyticsWithAds` | Google Analytics, with the features of Google Ads (Google Signals, remarketing) |
-| `AdobeTags` | The library of Adobe Experience Platform Tags (formerly Adobe Launch) |
-| `AdobeAnalytics` | Adobe Analytics (AppMeasurement) with the Experience Cloud Identity Service |
-| `AdobeWebSdk` | The Web SDK of Adobe Experience Platform |
-
-**Conversion tags (CV) of the ads**
-
-| Class | For |
-| --- | --- |
-| `GoogleAds` | Google Ads: the conversions, the remarketing, the conversion linker and the user data |
-| `Floodlight` | Floodlight, with its custom scripts |
-| `MerchantCenter` | Google Merchant Center |
-| `MetaPixel` | The Meta Pixel (Facebook Pixel), also for Instagram ads |
-| `TikTokPixel` | The TikTok Pixel |
-| `XPixel` | The X Pixel (formerly Twitter Pixel) |
-| `LineTag` | The LINE Tag of LINE Ads |
-| `YahooAds` | The conversion and site retargeting tags of Yahoo! JAPAN Ads (search and display ads), with the site general tag |
-| `MicrosoftAds` | The UET tag of Microsoft Advertising |
-
-**Embedded contents**
-
-| Class | For |
-| --- | --- |
-| `GoogleMaps` | The Maps JavaScript API of Google Maps |
-| `GoogleMapsEmbed` | A map of Google Maps embedded with an iframe (Maps Embed API, or "Share" > "Embed a map") |
-| `YouTube` | The embedded players of YouTube (also `youtube-nocookie.com`), the IFrame Player API and the thumbnails |
-| `Facebook` | The JavaScript SDK of Facebook and its social plugins (Page plugin, embedded posts, Like button, ...) |
-| `Instagram` | The embedded posts of Instagram |
-| `X` | The embedded posts, timelines and buttons of X (formerly Twitter) |
-| `TikTok` | The embedded videos and profiles of TikTok |
-| `Line` | The social plugins of LINE ("Share" and "Add friend" buttons) |
-
-They add the scripts to `script-src` instead of `script-src-elem` of Google's guide, so that the browsers
-without `script-src-elem`, such as Safari before 15.4, allow them too. Some services need more than sites:
-
-- `GoogleMaps` adds `'unsafe-eval'` to `script-src` and `'unsafe-inline'` to `style-src`, as Google's guide does.
-  Its inline script, e.g. the callback of the API, needs the nonce.
-- `Facebook`, `Instagram`, `X`, `TikTok` and `Line` add `'unsafe-inline'` to `style-src`: their scripts add
-  styles to the page, and their embed codes have `style` attributes.
-- `AdobeTags` is the library only: add the classes of its extensions, e.g. `AdobeAnalytics`, and the nonce for
-  its custom code (a data element of the nonce in the Core extension). A tracking server or an edge domain on a
-  domain of yours (a CNAME) is added with a name.
-- The embeds and the conversion tags of a service are separate classes, e.g. `Facebook` for the Page plugin and
-  `MetaPixel` for the conversions of Meta ads: list only those that the pages use.
-- The services change their hosts from time to time. Every week and at each release, the classes are checked in
-  Chrome against the services (except those of Adobe, which need a property). If the console of the browser
-  reports a host that a class does not have, add it to `contentSecurityPolicyAllow` with a name.
+The plugin has presets, classes for the tags, the conversion tags and the embeds of Google, Adobe, Meta
+(Facebook, Instagram), X, TikTok, LINE, YouTube, Yahoo! JAPAN and Microsoft. See [Presets](presets.md) for each of
+them, its sources and its notes: some add `'unsafe-inline'` to `style-src` or `'unsafe-eval'` to `script-src`, as
+their scripts need.
 
 To use the sources of a service in several applications, write a class of your own that implements
 `Sources`, e.g. in `src/Lib/`, and list it in the same way:

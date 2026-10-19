@@ -17,6 +17,9 @@ Content Security Policy は、デフォルトでは報告のみのモードで�
 - [アクションでヘッダーを変える](#changing-the-headers-in-an-action)
 - [注意点](#notes)
 - [プラグインを使わない場合](#without-the-plugin)
+- [プリセット](presets.md): サービスのクラスとそのソース
+
+<a id="installation"></a>
 
 ## インストール
 
@@ -52,6 +55,8 @@ Configure::write('Dispatcher.filters', [
 と `CacheDispatcher` は 9)。そのため、プラグインのファイルやキャッシュしたビューにもヘッダーが付きます。
 
 `webroot/` のファイルは CakePHP を通りません。ウェブサーバーが、ウェブサーバーのヘッダーを付けて送ります。
+
+<a id="settings"></a>
 
 ## 設定
 
@@ -98,6 +103,8 @@ Configure::write('SecurityHeaders', [
 ウェブサーバーが送る `Server` はプラグインでは取り除きません。ウェブサーバーでオフにしてください
 (nginx では `server_tokens off;`、Apache では `ServerTokens Prod` と `ServerSignature Off`)。
 
+<a id="allowing-other-sites"></a>
+
 ## ほかのサイトを許可する
 
 ほかのサイトのスクリプト、画像、フレームを許可するには、`contentSecurityPolicyAllow` に並べます。
@@ -131,67 +138,10 @@ default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self';
 script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-nocookie.com
 ```
 
-プラグインのクラス (`PieceOfCake2\SecurityHeaders\ContentSecurityPolicy`) は、サービスに必要なソースです。
-Google のタグは [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)、`GoogleMaps` は
-[Maps JavaScript API のガイド](https://developers.google.com/maps/documentation/javascript/content-security-policy?hl=ja)
-、Adobe は [Adobe のガイド](https://experienceleague.adobe.com/ja/docs/experience-platform/tags/client-side/content-security-policy)
-にもとづき、ほかはサービスの埋め込みコードから作って、ポリシーを有効にした Chrome で確かめています。
-
-**タグマネージャーとアクセス解析**
-
-| クラス | 対象 |
-| --- | --- |
-| `GoogleTagManager` | Google タグマネージャーのコンテナ |
-| `GoogleTagManagerPreview` | Google タグマネージャーのプレビューモード |
-| `GoogleAnalytics` | Google アナリティクス (Google 広告の機能なし) |
-| `GoogleAnalyticsWithAds` | Google アナリティクス (Google シグナルやリマーケティングなど、Google 広告の機能あり) |
-| `AdobeTags` | Adobe Experience Platform Tags (旧 Adobe Launch) のライブラリ |
-| `AdobeAnalytics` | Adobe Analytics (AppMeasurement) と Experience Cloud ID サービス |
-| `AdobeWebSdk` | Adobe Experience Platform の Web SDK |
-
-**広告のコンバージョン (CV) タグ**
-
-| クラス | 対象 |
-| --- | --- |
-| `GoogleAds` | Google 広告のコンバージョン、リマーケティング、コンバージョンリンカー、ユーザー提供データ |
-| `Floodlight` | Floodlight (カスタムスクリプトを含む) |
-| `MerchantCenter` | Google Merchant Center |
-| `MetaPixel` | Meta ピクセル (Facebook ピクセル。Instagram 広告も) |
-| `TikTokPixel` | TikTok ピクセル |
-| `XPixel` | X ピクセル (旧 Twitter ピクセル) |
-| `LineTag` | LINE 広告の LINE Tag |
-| `YahooAds` | Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン測定タグとサイトリターゲティングタグ、サイトジェネラルタグ |
-| `MicrosoftAds` | Microsoft 広告の UET タグ |
-
-**埋め込み**
-
-| クラス | 対象 |
-| --- | --- |
-| `GoogleMaps` | Google マップの Maps JavaScript API |
-| `GoogleMapsEmbed` | iframe で埋め込んだ Google マップ (Maps Embed API、または「共有」>「地図を埋め込む」) |
-| `YouTube` | YouTube の埋め込みプレーヤー (`youtube-nocookie.com` も)、IFrame Player API、サムネイル |
-| `Facebook` | Facebook の JavaScript SDK とソーシャルプラグイン (ページプラグイン、埋め込み投稿、いいね！ボタンなど) |
-| `Instagram` | Instagram の埋め込み投稿 |
-| `X` | X (旧 Twitter) の埋め込みポスト、タイムライン、ボタン |
-| `TikTok` | TikTok の埋め込み動画とプロフィール |
-| `Line` | LINE のソーシャルプラグイン (「LINEで送る」ボタン、「友だち追加」ボタン) |
-
-スクリプトは、Google のガイドの `script-src-elem` ではなく `script-src` に追加します。Safari 15.4 より前など、
-`script-src-elem` に対応していないブラウザーでも許可されるようにするためです。サイトのほかにも必要なものがある
-サービスがあります。
-
-- `GoogleMaps` は、Google のガイドと同じく、`script-src` に `'unsafe-eval'`、`style-src` に `'unsafe-inline'` を
-  追加します。API のコールバックなどのインラインのスクリプトには nonce が必要です。
-- `Facebook`、`Instagram`、`X`、`TikTok`、`Line` は `style-src` に `'unsafe-inline'` を追加します。スクリプトが
-  ページにスタイルを追加し、埋め込みコードに `style` 属性があるためです。
-- `AdobeTags` はライブラリだけです。拡張機能のクラス (`AdobeAnalytics` など) と、カスタムコードのための nonce
-  (Core 拡張機能に nonce のデータ要素を設定) も追加してください。自分のドメイン (CNAME) のトラッキングサーバーや
-  エッジドメインは、名前を付けて追加します。
-- 同じサービスでも、埋め込みとコンバージョンタグは別のクラスです (ページプラグインは `Facebook`、Meta 広告の
-  コンバージョンは `MetaPixel` など)。ページで使うものだけを並べてください。
-- サービスはホストを変えることがあります。クラスは毎週とリリースのたびに、実際のサービスに対して Chrome で
-  確かめています (プロパティが必要な Adobe は除きます)。クラスにないホストがブラウザーのコンソールに報告されたら、
-  名前を付けて `contentSecurityPolicyAllow` に追加してください。
+プラグインには、Google、Adobe、Meta (Facebook、Instagram)、X、TikTok、LINE、YouTube、Yahoo! JAPAN、Microsoft の
+タグ、コンバージョンタグ、埋め込みのためのクラス (プリセット) があります。それぞれのソースと注意点は
+[プリセット](presets.md) を参照してください。スクリプトの必要に応じて、`style-src` に `'unsafe-inline'` や
+`script-src` に `'unsafe-eval'` を追加するものがあります。
 
 複数のアプリケーションで同じサービスのソースを使うには、`Sources` を実装したクラスを `src/Lib/` などに
 書き、同じように並べます。
@@ -234,6 +184,8 @@ Configure::write('SecurityHeaders', [
 ```
 
 一部のアクションだけで追加するには、[コンポーネントの `addSources()`](#changing-the-headers-in-an-action) を使います。
+
+<a id="google-tag-manager-and-google-analytics"></a>
 
 ## Google タグマネージャーと Google アナリティクス
 
@@ -286,6 +238,8 @@ nonce が必要です: `<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>
 - [Tag Assistant](https://tagassistant.google.com) の「ページの問題」に、ポリシーがブロックしたリソースが
   表示されます。
 
+<a id="headers-for-the-web-server-or-the-cdn"></a>
+
 ## ウェブサーバーや CDN で送るヘッダー
 
 次のヘッダーはウェブサーバー、ロードバランサー、CDN で送るもので、デフォルトでオフです。
@@ -298,6 +252,8 @@ nonce が必要です: `<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>
 
 これらを送れるウェブサーバーや CDN を使わずにアプリケーションを公開する場合だけ、プラグインでオンに
 してください。
+
+<a id="enforcing-the-content-security-policy"></a>
 
 ## Content Security Policy を有効にする
 
@@ -316,6 +272,8 @@ Configure::write('SecurityHeaders', [
     'contentSecurityPolicyReportOnly' => false,
 ]);
 ```
+
+<a id="changing-the-headers-in-an-action"></a>
 
 ## アクションでヘッダーを変える
 
@@ -358,6 +316,8 @@ class WidgetsController extends AppController
 ヘッダー名は、フィルターが送る名前で書いてください。報告のみのモードでは
 `Content-Security-Policy-Report-Only` です。
 
+<a id="notes"></a>
+
 ## 注意点
 
 - **ほかのサイトのポップアップ。** `Cross-Origin-Opener-Policy: same-origin` では、ほかのサイトの
@@ -369,6 +329,8 @@ class WidgetsController extends AppController
   `same-site` か `cross-origin` にしてください。API の `fetch()` など、CORS のリクエストには影響しません。
 - **エラーページ。** エラーページは別のレスポンスを使うため、フィルターは `header()` でもヘッダーを
   送ります。あとからアプリケーションや CakePHP が同じ名前のヘッダーを送ると、そちらに置き換わります。
+
+<a id="without-the-plugin"></a>
 
 ## プラグインを使わない場合
 
