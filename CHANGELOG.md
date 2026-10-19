@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## 1.0.0 - Unreleased
+## 1.0.0
 
 First release of `pieceofcake2/security-headers`.
 
