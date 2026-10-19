@@ -4,7 +4,8 @@
 
 - New classes of `contentSecurityPolicyAllow`: `GoogleMaps` (Maps JavaScript API), `GoogleMapsEmbed`, `YouTube`,
   `Facebook` (JavaScript SDK and social plugins), `MetaPixel`, `TikTok`, `TikTokPixel`, `Line` (social plugins),
-  `LineTag`, `Instagram`, `X`, `XPixel`, `AdobeTags`, `AdobeAnalytics` and `AdobeWebSdk`
+  `LineTag`, `Instagram`, `X`, `XPixel`, `YahooAds`, `MicrosoftAds`, `AdobeTags`, `AdobeAnalytics` and
+  `AdobeWebSdk`
 
 ## 1.0.0
 

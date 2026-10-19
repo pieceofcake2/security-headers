@@ -160,6 +160,8 @@ Google のタグは [Google のガイド](https://developers.google.com/tag-plat
 | `TikTokPixel` | TikTok ピクセル |
 | `XPixel` | X ピクセル (旧 Twitter ピクセル) |
 | `LineTag` | LINE 広告の LINE Tag |
+| `YahooAds` | Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン測定タグとサイトリターゲティングタグ、サイトジェネラルタグ |
+| `MicrosoftAds` | Microsoft 広告の UET タグ |
 
 **埋め込み**
 

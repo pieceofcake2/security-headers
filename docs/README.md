@@ -162,6 +162,8 @@ and the others from the embed codes of the services, checked with an enforced po
 | `TikTokPixel` | The TikTok Pixel |
 | `XPixel` | The X Pixel (formerly Twitter Pixel) |
 | `LineTag` | The LINE Tag of LINE Ads |
+| `YahooAds` | The conversion and site retargeting tags of Yahoo! JAPAN Ads (search and display ads), with the site general tag |
+| `MicrosoftAds` | The UET tag of Microsoft Advertising |
 
 **Embedded contents**
 
