@@ -12,7 +12,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
  * The features of Google Ads also use the domain of the country of the user: add yours to
  * `contentSecurityPolicyAllow`, e.g. `https://*.google.co.jp` to `img-src` and `connect-src`.
  */
-class GoogleAnalyticsWithAds implements Sources
+class GoogleAnalyticsWithAds implements NeedsNonce
 {
     /**
      * @inheritDoc

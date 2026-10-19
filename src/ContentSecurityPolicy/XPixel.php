@@ -7,7 +7,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
  * The X Pixel (formerly Twitter Pixel), the conversion tag of X Ads: its script of static.ads-twitter.com and its
  * events sent to analytics.twitter.com and t.co
  */
-class XPixel implements Sources
+class XPixel implements NeedsNonce
 {
     /**
      * @inheritDoc

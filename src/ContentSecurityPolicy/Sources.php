@@ -4,7 +4,8 @@ declare(strict_types=1);
 namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
 
 /**
- * The sources that a service needs in the Content Security Policy, for `contentSecurityPolicyAllow`:
+ * The sources that a service needs in the Content Security Policy, for `contentSecurityPolicyAllow`. Implement
+ * `NeedsNonce` instead if the service has an inline script:
  *
  * ```
  * class Stripe implements Sources

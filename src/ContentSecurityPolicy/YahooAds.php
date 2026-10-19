@@ -9,7 +9,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
  * and send their events to the domains of https://www.lycbiz.com/jp/news/yahoo-ads/20230215; those of the display
  * ads send theirs to apm.yahoo.co.jp, and the site general tag sends some to dm.slim02.jp
  */
-class YahooAds implements Sources
+class YahooAds implements NeedsNonce
 {
     /**
      * @inheritDoc

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\NeedsNonce;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
 
 /**
@@ -44,8 +45,9 @@ class SecurityHeaders
         // The sources allowed in addition: classes of ContentSecurityPolicy\Sources, or arrays of sources by name, e.g.
         // [GoogleTagManager::class, 'stripe' => ['script-src' => ['https://js.stripe.com']]]
         'contentSecurityPolicyAllow' => [],
-        // A nonce of each request added to script-src, for the inline scripts: see nonce()
-        'contentSecurityPolicyNonce' => false,
+        // A nonce of each request added to script-src, for the inline scripts: see nonce(). By default (null), on
+        // when a class of contentSecurityPolicyAllow needs it (NeedsNonce)
+        'contentSecurityPolicyNonce' => null,
         // The browsers report the violations without blocking them: adapt the policy to the application first
         'contentSecurityPolicyReportOnly' => true,
         'reportUri' => false,
@@ -114,7 +116,8 @@ class SecurityHeaders
             $valid = match ($key) {
                 'contentSecurityPolicy' => is_string($value) || is_array($value) || $value === false || $value === null,
                 'contentSecurityPolicyAllow' => is_array($value),
-                'contentSecurityPolicyNonce', 'contentSecurityPolicyReportOnly', 'removePoweredBy' => is_bool($value),
+                'contentSecurityPolicyNonce' => is_bool($value) || $value === null,
+                'contentSecurityPolicyReportOnly', 'removePoweredBy' => is_bool($value),
                 default => is_string($value) || $value === false || $value === null,
             };
             if (!$valid) {
@@ -172,7 +175,7 @@ class SecurityHeaders
                 foreach (self::allowed((array)($settings['contentSecurityPolicyAllow'] ?? [])) as $sources) {
                     $directives = self::addSources($directives, $sources);
                 }
-                if ($nonce !== null && !empty($settings['contentSecurityPolicyNonce'])) {
+                if ($nonce !== null && self::usesNonce($settings)) {
                     // script-src-elem replaces script-src for the <script> elements
                     $nonced = ['script-src' => "'nonce-" . $nonce . "'"];
                     if (isset($directives['script-src-elem'])) {
@@ -192,6 +195,28 @@ class SecurityHeaders
         }
 
         return $headers;
+    }
+
+    /**
+     * Whether the policy has a nonce: `contentSecurityPolicyNonce`, or by default whether a class of
+     * `contentSecurityPolicyAllow` needs it
+     *
+     * @param array<string, mixed> $settings Settings of `settings()`
+     * @return bool
+     */
+    public static function usesNonce(array $settings): bool
+    {
+        $nonce = $settings['contentSecurityPolicyNonce'] ?? null;
+        if (is_bool($nonce)) {
+            return $nonce;
+        }
+        foreach ((array)($settings['contentSecurityPolicyAllow'] ?? []) as $name => $sources) {
+            if (is_int($name) && is_string($sources) && is_subclass_of($sources, NeedsNonce::class)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

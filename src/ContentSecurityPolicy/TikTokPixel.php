@@ -7,7 +7,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
  * The TikTok Pixel: its script of analytics.tiktok.com and its events, sent to analytics.tiktok.com and
  * analytics-ipv6.tiktokw.us
  */
-class TikTokPixel implements Sources
+class TikTokPixel implements NeedsNonce
 {
     /**
      * @inheritDoc

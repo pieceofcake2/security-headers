@@ -9,7 +9,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
  * The scripts are in `script-src` instead of `script-src-elem` of the guide, for the browsers without
  * `script-src-elem`, such as Safari before 15.4.
  */
-class GoogleTagManager implements Sources
+class GoogleTagManager implements NeedsNonce
 {
     /**
      * @inheritDoc

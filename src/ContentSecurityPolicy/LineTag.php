@@ -6,7 +6,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
 /**
  * The LINE Tag of LINE Ads: its scripts of d.line-scdn.net and tag.flvcdn.net, and its events sent to tr.line.me
  */
-class LineTag implements Sources
+class LineTag implements NeedsNonce
 {
     /**
      * @inheritDoc

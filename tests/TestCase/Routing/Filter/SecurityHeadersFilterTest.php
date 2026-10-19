@@ -1,5 +1,7 @@
 <?php
 
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+
 App::uses('CakeEvent', 'Event');
 App::uses('CakeRequest', 'Network');
 App::uses('CakeResponse', 'Network');
@@ -180,6 +182,22 @@ class SecurityHeadersFilterTest extends CakeTestCase
 
         $this->assertIsString($nonce);
         $this->assertSame($nonce, $request->param(SecurityHeadersFilter::NONCE));
+        $this->assertStringContainsString("'nonce-" . $nonce . "'", $response->header()['Content-Security-Policy-Report-Only']);
+    }
+
+    /**
+     * A class that needs the nonce turns it on, without contentSecurityPolicyNonce
+     *
+     * @return void
+     */
+    public function testNonceOfAClass(): void
+    {
+        Configure::write('SecurityHeaders.contentSecurityPolicyAllow', [GoogleTagManager::class]);
+        $request = new CakeRequest('/posts');
+        $response = $this->dispatch($request);
+        $nonce = $request->param(SecurityHeadersFilter::NONCE);
+
+        $this->assertIsString($nonce);
         $this->assertStringContainsString("'nonce-" . $nonce . "'", $response->header()['Content-Security-Policy-Report-Only']);
     }
 }
