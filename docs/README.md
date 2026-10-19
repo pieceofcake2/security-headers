@@ -139,38 +139,55 @@ that the services need. Those of Google's tags are from
 those of Adobe from [Adobe's guides](https://experienceleague.adobe.com/en/docs/experience-platform/tags/client-side/content-security-policy),
 and the others from the embed codes of the services, checked with an enforced policy in Chrome:
 
+**Tag managers and analytics**
+
 | Class | For |
 | --- | --- |
 | `GoogleTagManager` | The container of Google Tag Manager |
 | `GoogleTagManagerPreview` | The preview mode of Google Tag Manager |
 | `GoogleAnalytics` | Google Analytics, without the features of Google Ads |
 | `GoogleAnalyticsWithAds` | Google Analytics, with the features of Google Ads (Google Signals, remarketing) |
+| `AdobeTags` | The library of Adobe Experience Platform Tags (formerly Adobe Launch) |
+| `AdobeAnalytics` | Adobe Analytics (AppMeasurement) with the Experience Cloud Identity Service |
+| `AdobeWebSdk` | The Web SDK of Adobe Experience Platform |
+
+**Conversion tags (CV) of the ads**
+
+| Class | For |
+| --- | --- |
 | `GoogleAds` | Google Ads: the conversions, the remarketing, the conversion linker and the user data |
 | `Floodlight` | Floodlight, with its custom scripts |
 | `MerchantCenter` | Google Merchant Center |
+| `MetaPixel` | The Meta Pixel (Facebook Pixel), also for Instagram ads |
+| `TikTokPixel` | The TikTok Pixel |
+| `XPixel` | The X Pixel (formerly Twitter Pixel) |
+| `LineTag` | The LINE Tag of LINE Ads |
+
+**Embedded contents**
+
+| Class | For |
+| --- | --- |
 | `GoogleMaps` | The Maps JavaScript API of Google Maps |
 | `GoogleMapsEmbed` | A map of Google Maps embedded with an iframe (Maps Embed API, or "Share" > "Embed a map") |
 | `YouTube` | The embedded players of YouTube (also `youtube-nocookie.com`), the IFrame Player API and the thumbnails |
 | `Facebook` | The JavaScript SDK of Facebook and its social plugins (Page plugin, embedded posts, Like button, ...) |
-| `MetaPixel` | The Meta Pixel (Facebook Pixel) |
+| `Instagram` | The embedded posts of Instagram |
+| `X` | The embedded posts, timelines and buttons of X (formerly Twitter) |
 | `TikTok` | The embedded videos and profiles of TikTok |
-| `TikTokPixel` | The TikTok Pixel |
 | `Line` | The social plugins of LINE ("Share" and "Add friend" buttons) |
-| `LineTag` | The LINE Tag of LINE Ads |
-| `AdobeTags` | The library of Adobe Experience Platform Tags (formerly Adobe Launch) |
-| `AdobeAnalytics` | Adobe Analytics (AppMeasurement) with the Experience Cloud Identity Service |
-| `AdobeWebSdk` | The Web SDK of Adobe Experience Platform |
 
 They add the scripts to `script-src` instead of `script-src-elem` of Google's guide, so that the browsers
 without `script-src-elem`, such as Safari before 15.4, allow them too. Some services need more than sites:
 
 - `GoogleMaps` adds `'unsafe-eval'` to `script-src` and `'unsafe-inline'` to `style-src`, as Google's guide does.
   Its inline script, e.g. the callback of the API, needs the nonce.
-- `Facebook`, `TikTok` and `Line` add `'unsafe-inline'` to `style-src`: their scripts add styles to the page,
-  and the embed codes of TikTok and LINE have `style` attributes.
+- `Facebook`, `Instagram`, `X`, `TikTok` and `Line` add `'unsafe-inline'` to `style-src`: their scripts add
+  styles to the page, and their embed codes have `style` attributes.
 - `AdobeTags` is the library only: add the classes of its extensions, e.g. `AdobeAnalytics`, and the nonce for
   its custom code (a data element of the nonce in the Core extension). A tracking server or an edge domain on a
   domain of yours (a CNAME) is added with a name.
+- The embeds and the conversion tags of a service are separate classes, e.g. `Facebook` for the Page plugin and
+  `MetaPixel` for the conversions of Meta ads: list only those that the pages use.
 - The services change their hosts from time to time. If the console of the browser reports a host that a class
   does not have, add it to `contentSecurityPolicyAllow` with a name.
 
