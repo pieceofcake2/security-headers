@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.0.4
 
 - `YahooAds`, the deprecated name of `YahooJapanAds`, is removed
 
