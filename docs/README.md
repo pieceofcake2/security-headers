@@ -59,8 +59,9 @@ The files in `webroot/` do not reach CakePHP: the web server sends them, with it
 
 Change the settings with `Configure::write('SecurityHeaders', [...])` in `config/bootstrap.php`. A
 setting is the value of its header, or `false` not to send it. The settings that you do not write
-keep their defaults. An unknown setting throws an `InvalidArgumentException`, so that a typo does
-not leave a header with its default silently.
+keep their defaults. An unknown setting, a value of another type (e.g. an array for a header, or `1` for
+`true`) and an unknown directive of the policy throw an `InvalidArgumentException`, so that a typo does not
+leave a header with its default, or a directive that the browsers ignore, silently.
 
 ```php
 Configure::write('SecurityHeaders', [
@@ -109,6 +110,7 @@ its other directives and sources:
 ```php
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAnalytics;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 Configure::write('SecurityHeaders', [
     'contentSecurityPolicyAllow' => [
@@ -117,20 +119,19 @@ Configure::write('SecurityHeaders', [
         'cdn' => [
             'script-src' => ['https://cdn.example.com'],
         ],
-        'youtube' => [
-            'frame-src' => ['https://www.youtube-nocookie.com'],
-        ],
+        YouTube::class,
     ],
 ]);
 ```
 
 A directive that the policy does not have starts from the sources of the one that the browsers use
 instead, as `default-src` for `script-src`, so that `'self'` stays allowed. `'none'` is removed when
-you add sources to a directive. With the default policy, the sites of `cdn` and `youtube` above give:
+you add sources to a directive. With the default policy, `cdn` and `YouTube::class` above give:
 
 ```text
 default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none';
-script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-nocookie.com
+script-src 'self' https://cdn.example.com https://www.youtube.com; img-src 'self' https://i.ytimg.com;
+frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com
 ```
 
 The plugin has presets, classes for the tags, the conversion tags and the embeds of Google, Adobe, Meta
