@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.0.3
 
 - The presets whose code has an inline script, e.g. `GoogleTagManager` and `MetaPixel`, turn on the nonce
   (`NeedsNonce`): `contentSecurityPolicyNonce` is `null` by default, `true` and `false` still turn it on and off
