@@ -1,0 +1,76 @@
+name: Policies
+
+# Opens the embed codes and the base codes of the services with the policies of their classes in Chrome, through
+# the services on the Internet: the services change their hosts from time to time.
+on:
+  release:
+    types:
+      - published
+  pull_request:
+    branches:
+      - '**'
+    paths:
+      - 'src/ContentSecurityPolicy/**'
+      - 'Lib/SecurityHeaders.php'
+      - 'tests/Policy/**'
+      - '.github/workflows/policies.yml'
+  schedule:
+    # Every Monday at 00:00 UTC (09:00 JST)
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policies:
+    if: github.repository_owner == 'pieceofcake2'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          coverage: none
+
+      - name: Composer get cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-php8.4-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: |
+            ${{ runner.os }}-php8.4-composer-
+
+      - name: Install Composer Packages
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Make temporary directories writable
+        run: |
+          chmod -R 777 ./vendor/pieceofcake2/app/tmp
+          chmod -R 777 ./vendor/pieceofcake2/app/logs
+
+      - name: Check the policies
+        run: ./vendor/bin/phpunit tests/Policy --testdox --log-junit junit.xml --colors=always
+
+      - name: Summary
+        if: ${{ !cancelled() }}
+        uses: pieceofcake2/ci-summary@v1
+        with:
+          type: junit
+          title: Policies of the services
+          file: junit.xml

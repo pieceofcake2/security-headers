@@ -190,8 +190,9 @@ without `script-src-elem`, such as Safari before 15.4, allow them too. Some serv
   domain of yours (a CNAME) is added with a name.
 - The embeds and the conversion tags of a service are separate classes, e.g. `Facebook` for the Page plugin and
   `MetaPixel` for the conversions of Meta ads: list only those that the pages use.
-- The services change their hosts from time to time. If the console of the browser reports a host that a class
-  does not have, add it to `contentSecurityPolicyAllow` with a name.
+- The services change their hosts from time to time. Every week and at each release, the classes are checked in
+  Chrome against the services (except those of Adobe, which need a property). If the console of the browser
+  reports a host that a class does not have, add it to `contentSecurityPolicyAllow` with a name.
 
 To use the sources of a service in several applications, write a class of your own that implements
 `Sources`, e.g. in `src/Lib/`, and list it in the same way:
