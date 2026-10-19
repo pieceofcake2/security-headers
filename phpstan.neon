@@ -8,6 +8,7 @@ parameters:
         - Controller
         - Lib
         - Routing
+        - src
         - View
     bootstrapFiles:
         - tests/bootstrap.php
