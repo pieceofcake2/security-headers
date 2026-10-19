@@ -7,6 +7,18 @@ use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
 
+class SecurityHeadersTestWithArguments implements Sources
+{
+    public function __construct(private string $host)
+    {
+    }
+
+    public function sources(): array
+    {
+        return ['img-src' => [$this->host]];
+    }
+}
+
 class SecurityHeadersTestStripe implements Sources
 {
     public function sources(): array
@@ -336,5 +348,17 @@ class SecurityHeadersTest extends CakeTestCase
             'Floodlight', 'GoogleAds', 'GoogleAnalytics', 'GoogleAnalyticsWithAds', 'GoogleMaps', 'GoogleTagManager',
             'LineTag', 'MerchantCenter', 'MetaPixel', 'MicrosoftAds', 'TikTokPixel', 'XPixel', 'YahooAds',
         ], $needs);
+    }
+
+    /**
+     * A class that needs arguments to be created throws with its name, instead of an ArgumentCountError
+     *
+     * @return void
+     */
+    public function testClassWithArguments(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must be created without arguments: SecurityHeadersTestWithArguments');
+        SecurityHeaders::settings(['contentSecurityPolicyAllow' => [SecurityHeadersTestWithArguments::class]]);
     }
 }

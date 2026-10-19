@@ -225,7 +225,8 @@ class SecurityHeaders
      * @param array<int|string, string|array<string, string|array<string>>> $allow Classes of
      *   `ContentSecurityPolicy\Sources`, or arrays of sources by directive by name
      * @return array<string, array<string, string|array<string>>>
-     * @throws \InvalidArgumentException When a class is unknown or does not implement `ContentSecurityPolicy\Sources`
+     * @throws \InvalidArgumentException When a class is unknown, does not implement `ContentSecurityPolicy\Sources` or
+     *   cannot be created without arguments
      */
     public static function allowed(array $allow): array
     {
@@ -234,6 +235,10 @@ class SecurityHeaders
             if (is_int($name) && is_string($sources)) {
                 if (!is_subclass_of($sources, Sources::class)) {
                     throw new InvalidArgumentException(sprintf('Not a class of %s in contentSecurityPolicyAllow of SecurityHeaders: %s', Sources::class, $sources));
+                }
+                $class = new ReflectionClass($sources);
+                if (!$class->isInstantiable() || ($class->getConstructor()?->getNumberOfRequiredParameters() ?? 0) > 0) {
+                    throw new InvalidArgumentException(sprintf('A class of contentSecurityPolicyAllow of SecurityHeaders must be created without arguments: %s', $sources));
                 }
                 $allowed[$sources] = (new $sources())->sources();
             } elseif (is_string($name) && is_array($sources)) {
