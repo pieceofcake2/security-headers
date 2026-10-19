@@ -10,7 +10,7 @@ Content Security Policy は、デフォルトでは報告のみのモードで�
 
 - [インストール](#installation)
 - [設定](#settings)
-- [Content Security Policy にサイトを追加する](#adding-sites-to-the-content-security-policy)
+- [ほかのサイトを許可する](#allowing-other-sites)
 - [Google タグマネージャーと Google アナリティクス](#google-tag-manager-and-google-analytics)
 - [ウェブサーバーや CDN で送るヘッダー](#headers-for-the-web-server-or-the-cdn)
 - [Content Security Policy を有効にする](#enforcing-the-content-security-policy)
@@ -63,8 +63,8 @@ Configure::write('Dispatcher.filters', [
 ```php
 Configure::write('SecurityHeaders', [
     'xFrameOptions' => 'DENY',
-    'contentSecurityPolicySources' => [
-        'script-src' => ['https://cdn.example.com'],
+    'contentSecurityPolicyAllow' => [
+        'cdn' => ['script-src' => ['https://cdn.example.com']],
     ],
 ]);
 ```
@@ -74,9 +74,8 @@ Configure::write('SecurityHeaders', [
 | 設定 | ヘッダー | デフォルト | 役割 |
 | --- | --- | --- | --- |
 | `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | ページのスクリプト、スタイル、画像、フレーム、フォームの送信先を制限します。XSS に対する主な防御です。ディレクティブとソースの配列か、ポリシーの文字列で書きます。 |
-| `contentSecurityPolicyPresets` | | `[]` | ソースをポリシーに追加するサービス (例: `['googleTagManager', 'googleAnalytics']`)。[Google タグマネージャーと Google アナリティクス](#google-tag-manager-and-google-analytics) を参照してください。 |
+| `contentSecurityPolicyAllow` | | `[]` | ポリシーで許可するほかのサイト。サービスのクラス (例: `GoogleTagManager::class`) か、名前を付けたディレクティブごとのソースを書きます。[ほかのサイトを許可する](#allowing-other-sites) を参照してください。 |
 | `contentSecurityPolicyNonce` | | `false` | リクエストごとに新しい nonce を `script-src` に追加します。`nonce` 属性にその値を持つインラインのスクリプトが許可されます。[Google タグマネージャーと Google アナリティクス](#google-tag-manager-and-google-analytics) を参照してください。 |
-| `contentSecurityPolicySources` | | `[]` | ポリシーのディレクティブに追加するソース (ほかのサイトなど)。[Content Security Policy にサイトを追加する](#adding-sites-to-the-content-security-policy) を参照してください。 |
 | `contentSecurityPolicyReportOnly` | | `true` | ポリシーを `Content-Security-Policy-Report-Only` で送ります。ブラウザーは違反をブロックせず、コンソール (と `reportUri`) に報告します。[Content Security Policy を有効にする](#enforcing-the-content-security-policy) を参照してください。 |
 | `reportUri` | | `false` | 違反の報告を受け取る URL。ポリシーに `report-uri` として追加します。 |
 | `xFrameOptions` | `X-Frame-Options` | `SAMEORIGIN` | ほかのサイトがページをフレームで表示できるか (クリックジャッキング)。モダンなブラウザーではポリシーの `frame-ancestors` が優先されます。古いブラウザー向けです。 |
@@ -99,29 +98,82 @@ Configure::write('SecurityHeaders', [
 ウェブサーバーが送る `Server` はプラグインでは取り除きません。ウェブサーバーでオフにしてください
 (nginx では `server_tokens off;`、Apache では `ServerTokens Prod` と `ServerSignature Off`)。
 
-## Content Security Policy にサイトを追加する
+## ほかのサイトを許可する
 
-ほかのサイトのスクリプト、画像、フレームを許可するには、`contentSecurityPolicySources` でディレクティブ
-ごとに追加します。ポリシーのほかのディレクティブとソースはそのまま残ります。
+ほかのサイトのスクリプト、画像、フレームを許可するには、`contentSecurityPolicyAllow` に並べます。
+サービスのクラスか、自分で付けた名前とディレクティブごとのソースを書きます。ポリシーのほかの
+ディレクティブとソースはそのまま残ります。
 
 ```php
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAnalytics;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+
 Configure::write('SecurityHeaders', [
-    'contentSecurityPolicySources' => [
-        'script-src' => ['https://cdn.example.com'],
-        'img-src' => ['https://images.example.com', 'data:'],
-        'frame-src' => ['https://www.youtube-nocookie.com'],
+    'contentSecurityPolicyAllow' => [
+        GoogleTagManager::class,
+        GoogleAnalytics::class,
+        'cdn' => [
+            'script-src' => ['https://cdn.example.com'],
+        ],
+        'youtube' => [
+            'frame-src' => ['https://www.youtube-nocookie.com'],
+        ],
     ],
 ]);
-// default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none';
-// script-src 'self' https://cdn.example.com; img-src 'self' https://images.example.com data:;
-// frame-src 'self' https://www.youtube-nocookie.com
 ```
 
 ポリシーにないディレクティブは、ブラウザーが代わりに使うディレクティブ (`script-src` なら `default-src`)
 のソースから始めるので、`'self'` は許可されたままです。ソースを追加したディレクティブからは `'none'`
-を取り除きます。
+を取り除きます。デフォルトのポリシーに上の `cdn` と `youtube` を追加すると、次のようになります。
 
-ポリシー全体を書くには、`contentSecurityPolicy` を配列か文字列で設定します。
+```text
+default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none';
+script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-nocookie.com
+```
+
+プラグインのクラス (`PieceOfCake2\SecurityHeaders\ContentSecurityPolicy`) は、Google のサービスに必要な
+ソースです。[Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja) に
+もとづいています。
+
+| クラス | 対象 |
+| --- | --- |
+| `GoogleTagManager` | Google タグマネージャーのコンテナ |
+| `GoogleTagManagerPreview` | Google タグマネージャーのプレビューモード |
+| `GoogleAnalytics` | Google アナリティクス (Google 広告の機能なし) |
+| `GoogleAnalyticsWithAds` | Google アナリティクス (Google シグナルやリマーケティングなど、Google 広告の機能あり) |
+| `GoogleAds` | Google 広告のコンバージョン、リマーケティング、コンバージョンリンカー、ユーザー提供データ |
+| `Floodlight` | Floodlight (カスタムスクリプトを含む) |
+| `MerchantCenter` | Google Merchant Center |
+
+スクリプトは、ガイドの `script-src-elem` ではなく `script-src` に追加します。Safari 15.4 より前など、
+`script-src-elem` に対応していないブラウザーでも許可されるようにするためです。
+
+複数のアプリケーションで同じサービスのソースを使うには、`Sources` を実装したクラスを `src/Lib/` などに
+書き、同じように並べます。
+
+```php
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
+
+class StripeSources implements Sources
+{
+    /**
+     * Stripe.js のソース
+     *
+     * @return array<string, array<string>>
+     */
+    public function sources(): array
+    {
+        return [
+            'script-src' => ['https://js.stripe.com'],
+            'frame-src' => ['https://js.stripe.com'],
+        ];
+    }
+}
+```
+
+`Sources` を実装していないクラスや、名前のない値は `InvalidArgumentException` を投げます。
+
+代わりにポリシー全体を書くには、`contentSecurityPolicy` を配列か文字列で設定します。
 
 ```php
 Configure::write('SecurityHeaders', [
@@ -140,29 +192,14 @@ Configure::write('SecurityHeaders', [
 
 ## Google タグマネージャーと Google アナリティクス
 
-プリセットは、Google のサービスに必要なソースを
-[Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja) にもとづいて追加します。
-Google タグマネージャーと Google アナリティクスにはインラインのスクリプトもあり、nonce が必要です。
+Google タグマネージャーと Google アナリティクスにはインラインのスクリプトがあり、nonce が必要です。
 
 ```php
 Configure::write('SecurityHeaders', [
-    'contentSecurityPolicyPresets' => ['googleTagManager', 'googleAnalytics'],
+    'contentSecurityPolicyAllow' => [GoogleTagManager::class, GoogleAnalytics::class],
     'contentSecurityPolicyNonce' => true,
 ]);
 ```
-
-| プリセット | 対象 |
-| --- | --- |
-| `googleTagManager` | Google タグマネージャーのコンテナ |
-| `googleTagManagerPreview` | Google タグマネージャーのプレビューモード |
-| `googleAnalytics` | Google アナリティクス (Google 広告の機能なし) |
-| `googleAnalyticsWithAds` | Google アナリティクス (Google シグナルやリマーケティングなど、Google 広告の機能あり) |
-| `googleAds` | Google 広告のコンバージョン、リマーケティング、コンバージョンリンカー、ユーザー提供データ |
-| `floodlight` | Floodlight (カスタムスクリプトを含む) |
-| `merchantCenter` | Google Merchant Center |
-
-プリセットは、ガイドの `script-src-elem` ではなく `script-src` にスクリプトを追加します。Safari 15.4
-より前など、`script-src-elem` に対応していないブラウザーでも許可されるようにするためです。
 
 インラインのスクリプトには、`SecurityHeadersHelper` で nonce を付けます。`AppController` でヘルパーを
 読み込みます。
@@ -191,14 +228,14 @@ nonce が必要です: `<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>
 
 - **国のドメイン。** Google 広告の機能は、利用者の国のドメイン (例: `www.google.co.jp`) を使います。
   ポリシーではホストの末尾にワイルドカードを使えないため、利用者の国のドメインを
-  `contentSecurityPolicySources` で追加してください。`googleAnalyticsWithAds` では
-  `['img-src' => ['https://*.google.co.jp'], 'connect-src' => ['https://*.google.co.jp']]`
-  (`googleAds` では `https://www.google.co.jp`) です。
+  `contentSecurityPolicyAllow` に追加してください。`GoogleAnalyticsWithAds` では
+  `'google-jp' => ['img-src' => ['https://*.google.co.jp'], 'connect-src' => ['https://*.google.co.jp']]`
+  (`GoogleAds` では `https://www.google.co.jp`) です。
 - **カスタム JavaScript 変数**を Google タグマネージャーで使うには、`script-src` に `'unsafe-eval'` が
   必要です。できればカスタムテンプレートを使ってください。
 - **nonce を使わない場合**、Google のガイドは `'unsafe-inline'` でインラインのスクリプトを許可します。
   これは XSS のインラインのスクリプトも許可します。nonce を付けられない場合だけ、
-  `contentSecurityPolicySources` で追加してください。
+  `contentSecurityPolicyAllow` に追加してください。
 - **キャッシュ。** nonce はレスポンスごとに変わります。`CacheHelper` や CDN が HTML ごとキャッシュした
   ページには別のレスポンスの nonce が入っているため、インラインのスクリプトがブロックされます。
 - [Tag Assistant](https://tagassistant.google.com) の「ページの問題」に、ポリシーがブロックしたリソースが
@@ -225,7 +262,7 @@ nonce が必要です: `<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>
 `Content-Security-Policy-Report-Only` で送ります。
 
 1. ブラウザーのコンソールを開いてアプリケーションのページを開き、報告されたものを修正するか許可します。
-   インラインのスクリプトはファイルに移すか、必要な[サイトを追加](#adding-sites-to-the-content-security-policy)します。
+   インラインのスクリプトはファイルに移すか、必要な[サイトを許可](#allowing-other-sites)します。
 2. 必要なら、`reportUri` で利用者のブラウザーからの報告を集めます。
 3. 報告が出なくなったら、ポリシーを有効にします。
 
@@ -268,7 +305,7 @@ class WidgetsController extends AppController
 }
 ```
 
-- `addSources($directive, $sources)` は、`contentSecurityPolicySources` と同じように、設定の Content
+- `addSources($directive, $sources)` は、`contentSecurityPolicyAllow` と同じように、設定の Content
   Security Policy のディレクティブにソースを追加します。
 - `set($name, $value)` は、設定のヘッダーを置き換えます。
 - `disable($name)` は、このレスポンスではそのヘッダーを送りません。

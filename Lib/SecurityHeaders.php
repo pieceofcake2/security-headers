@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
+
 /**
  * The security headers of the responses of an application, from the settings of `Configure::read('SecurityHeaders')`.
  *
@@ -39,10 +41,9 @@ class SecurityHeaders
             'base-uri' => ["'self'"],
             'object-src' => ["'none'"],
         ],
-        // The sources added to the directives of the policy, e.g. ['script-src' => ['https://cdn.example.com']]
-        'contentSecurityPolicySources' => [],
-        // The sources of the services of PRESETS added to the policy, e.g. ['googleTagManager', 'googleAnalytics']
-        'contentSecurityPolicyPresets' => [],
+        // The sources allowed in addition: classes of ContentSecurityPolicy\Sources, or arrays of sources by name, e.g.
+        // [GoogleTagManager::class, 'stripe' => ['script-src' => ['https://js.stripe.com']]]
+        'contentSecurityPolicyAllow' => [],
         // A nonce of each request added to script-src, for the inline scripts: see nonce()
         'contentSecurityPolicyNonce' => false,
         // The browsers report the violations without blocking them: adapt the policy to the application first
@@ -60,60 +61,6 @@ class SecurityHeaders
         'cacheControl' => false,
         'crossOriginEmbedderPolicy' => false,
         'xXssProtection' => false,
-    ];
-
-    /**
-     * The sources that the services need, by directive. From
-     * https://developers.google.com/tag-platform/security/guides/csp, with `script-src` instead of `script-src-elem`
-     * for the browsers without `script-src-elem`.
-     */
-    public const PRESETS = [
-        // The container of Google Tag Manager. Its inline snippet needs the nonce, see contentSecurityPolicyNonce
-        'googleTagManager' => [
-            'script-src' => ['https://www.googletagmanager.com'],
-            'img-src' => ['https://www.googletagmanager.com'],
-            'connect-src' => ['https://www.googletagmanager.com', 'https://www.google.com'],
-        ],
-        // The preview mode of Google Tag Manager
-        'googleTagManagerPreview' => [
-            'script-src' => ['https://www.googletagmanager.com', 'https://tagmanager.google.com'],
-            'style-src' => ['https://www.googletagmanager.com', 'https://tagmanager.google.com', 'https://fonts.googleapis.com'],
-            'img-src' => ['https://www.googletagmanager.com', 'https://ssl.gstatic.com', 'https://www.gstatic.com'],
-            'font-src' => ['https://fonts.gstatic.com', 'data:'],
-        ],
-        // Google Analytics, without the features of Google Ads
-        'googleAnalytics' => [
-            'script-src' => ['https://www.googletagmanager.com'],
-            'img-src' => ['https://www.googletagmanager.com', 'https://*.google-analytics.com'],
-            'connect-src' => ['https://www.googletagmanager.com', 'https://*.google-analytics.com', 'https://*.google.com'],
-        ],
-        // Google Analytics, with the features of Google Ads. Add the domains of the countries, e.g. https://*.google.co.jp
-        'googleAnalyticsWithAds' => [
-            'script-src' => ['https://www.googletagmanager.com'],
-            'img-src' => ['https://www.googletagmanager.com', 'https://*.google-analytics.com', 'https://*.google.com', 'https://*.g.doubleclick.net'],
-            'connect-src' => ['https://www.googletagmanager.com', 'https://*.google-analytics.com', 'https://*.google.com', 'https://*.g.doubleclick.net', 'https://pagead2.googlesyndication.com'],
-            'frame-src' => ['https://www.googletagmanager.com'],
-        ],
-        // Google Ads: the conversions, the remarketing, the conversion linker and the user data. Add the domains
-        // of the countries, e.g. https://www.google.co.jp
-        'googleAds' => [
-            'script-src' => ['https://www.googletagmanager.com', 'https://www.googleadservices.com', 'https://www.google.com'],
-            'img-src' => ['https://www.googletagmanager.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://pagead2.googlesyndication.com', 'https://www.google.com'],
-            'connect-src' => ['https://www.googletagmanager.com', 'https://www.googleadservices.com', 'https://googleads.g.doubleclick.net', 'https://pagead2.googlesyndication.com', 'https://www.google.com', 'https://ad.doubleclick.net'],
-            'frame-src' => ['https://www.googletagmanager.com'],
-        ],
-        // Floodlight
-        'floodlight' => [
-            'img-src' => ['https://www.googletagmanager.com', 'https://ad.doubleclick.net', 'https://ade.googlesyndication.com', 'https://adservice.google.com'],
-            'connect-src' => ['https://pagead2.googlesyndication.com', 'https://www.google.com', 'https://www.googleadservices.com', 'https://ad.doubleclick.net'],
-            'frame-src' => ['https://www.googletagmanager.com', 'https://*.fls.doubleclick.net'],
-        ],
-        // Google Merchant Center
-        'merchantCenter' => [
-            'script-src' => ['https://www.googletagmanager.com'],
-            'img-src' => ['https://*.merchant-center-analytics.goog'],
-            'connect-src' => ['https://*.merchant-center-analytics.goog'],
-        ],
     ];
 
     /**
@@ -151,10 +98,7 @@ class SecurityHeaders
         if ($unknown !== []) {
             throw new InvalidArgumentException(sprintf('Unknown setting of SecurityHeaders: %s', implode(', ', $unknown)));
         }
-        $unknown = array_diff((array)($settings['contentSecurityPolicyPresets'] ?? []), array_keys(self::PRESETS));
-        if ($unknown !== []) {
-            throw new InvalidArgumentException(sprintf('Unknown preset of SecurityHeaders: %s', implode(', ', $unknown)));
-        }
+        self::allowed((array)($settings['contentSecurityPolicyAllow'] ?? []));
 
         return $settings + self::DEFAULTS;
     }
@@ -180,10 +124,9 @@ class SecurityHeaders
             }
             if ($key === 'contentSecurityPolicy') {
                 $directives = self::directives($value);
-                foreach ((array)($settings['contentSecurityPolicyPresets'] ?? []) as $preset) {
-                    $directives = self::addSources($directives, self::PRESETS[$preset]);
+                foreach (self::allowed((array)($settings['contentSecurityPolicyAllow'] ?? [])) as $sources) {
+                    $directives = self::addSources($directives, $sources);
                 }
-                $directives = self::addSources($directives, (array)($settings['contentSecurityPolicySources'] ?? []));
                 if ($nonce !== null && !empty($settings['contentSecurityPolicyNonce'])) {
                     // script-src-elem replaces script-src for the <script> elements
                     $nonced = ['script-src' => "'nonce-" . $nonce . "'"];
@@ -204,6 +147,33 @@ class SecurityHeaders
         }
 
         return $headers;
+    }
+
+    /**
+     * The sources allowed in addition, by name
+     *
+     * @param array<int|string, string|array<string, string|array<string>>> $allow Classes of
+     *   `ContentSecurityPolicy\Sources`, or arrays of sources by directive by name
+     * @return array<string, array<string, string|array<string>>>
+     * @throws \InvalidArgumentException When a class is unknown or does not implement `ContentSecurityPolicy\Sources`
+     */
+    public static function allowed(array $allow): array
+    {
+        $allowed = [];
+        foreach ($allow as $name => $sources) {
+            if (is_int($name) && is_string($sources)) {
+                if (!is_subclass_of($sources, Sources::class)) {
+                    throw new InvalidArgumentException(sprintf('Not a class of %s in contentSecurityPolicyAllow of SecurityHeaders: %s', Sources::class, $sources));
+                }
+                $allowed[$sources] = (new $sources())->sources();
+            } elseif (is_string($name) && is_array($sources)) {
+                $allowed[$name] = $sources;
+            } else {
+                throw new InvalidArgumentException(sprintf('Neither a class nor sources by name in contentSecurityPolicyAllow of SecurityHeaders: %s', is_string($name) ? $name : var_export($sources, true)));
+            }
+        }
+
+        return $allowed;
     }
 
     /**

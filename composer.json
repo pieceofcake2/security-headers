@@ -17,6 +17,11 @@
         "pieceofcake2/phpcs-cakephp2": "^1.1",
         "pieceofcake2/phpstan-cakephp2": "^1.0"
     },
+    "autoload": {
+        "psr-4": {
+            "PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\": "Lib/ContentSecurityPolicy/"
+        }
+    },
     "autoload-dev": {
         "exclude-from-classmap": [
             "vendor/pieceofcake2/app/src/Console/Command/AppShell.php"

@@ -64,7 +64,7 @@ class SecurityHeadersComponentTest extends CakeTestCase
         Configure::write('SecurityHeaders', [
             'contentSecurityPolicy' => ['default-src' => ["'self'"]],
             'contentSecurityPolicyReportOnly' => false,
-            'contentSecurityPolicySources' => ['img-src' => 'https://images.example.com'],
+            'contentSecurityPolicyAllow' => ['images' => ['img-src' => 'https://images.example.com']],
         ]);
         $this->SecurityHeaders->addSources('FRAME-SRC', 'https://www.youtube-nocookie.com');
         $this->SecurityHeaders->addSources('img-src', ['data:']);

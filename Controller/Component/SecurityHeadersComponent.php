@@ -70,7 +70,7 @@ class SecurityHeadersComponent extends Component
         $directive = strtolower($directive);
         $this->sources[$directive] = [...$this->sources[$directive] ?? [], ...(array)$sources];
         $settings = SecurityHeaders::settings();
-        $settings['contentSecurityPolicySources'] = array_merge_recursive((array)$settings['contentSecurityPolicySources'], $this->sources);
+        $settings['contentSecurityPolicyAllow'] = [...(array)$settings['contentSecurityPolicyAllow'], self::class => $this->sources];
         $request = $this->controller?->request;
         $nonce = $request?->param(SecurityHeadersFilter::NONCE);
         foreach (SecurityHeaders::headers($settings, $request !== null && $request->is('ssl'), is_string($nonce) ? $nonce : null) as $name => $value) {

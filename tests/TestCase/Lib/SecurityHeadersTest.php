@@ -1,6 +1,17 @@
 <?php
 
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
+
 App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
+
+class SecurityHeadersTestStripe implements Sources
+{
+    public function sources(): array
+    {
+        return ['script-src' => ['https://js.stripe.com'], 'frame-src' => 'https://js.stripe.com'];
+    }
+}
 
 class SecurityHeadersTest extends CakeTestCase
 {
@@ -87,14 +98,16 @@ class SecurityHeadersTest extends CakeTestCase
         }
     }
 
-    public function testContentSecurityPolicySources(): void
+    public function testContentSecurityPolicyAllow(): void
     {
         $headers = SecurityHeaders::headers(SecurityHeaders::settings([
-            'contentSecurityPolicySources' => [
-                'script-src' => ['https://cdn.example.com'],
-                'img-src' => ['https://images.example.com', 'data:'],
-                'frame-ancestors' => 'https://partner.example.com',
-                'object-src' => ['https://objects.example.com'],
+            'contentSecurityPolicyAllow' => [
+                'sites' => [
+                    'script-src' => ['https://cdn.example.com'],
+                    'img-src' => ['https://images.example.com', 'data:'],
+                    'frame-ancestors' => 'https://partner.example.com',
+                    'object-src' => ['https://objects.example.com'],
+                ],
             ],
         ]), true);
 
@@ -109,7 +122,7 @@ class SecurityHeadersTest extends CakeTestCase
      *
      * @return void
      */
-    public function testContentSecurityPolicySourcesOfFallbacks(): void
+    public function testAddSourcesOfFallbacks(): void
     {
         $directives = SecurityHeaders::addSources(
             ['default-src' => ["'self'"], 'script-src' => ["'self'", 'https://cdn.example.com'], 'child-src' => ["'none'"]],
@@ -126,7 +139,7 @@ class SecurityHeadersTest extends CakeTestCase
     {
         $headers = SecurityHeaders::headers(SecurityHeaders::settings([
             'contentSecurityPolicy' => "default-src 'self'; IMG-SRC 'self'  data:;; upgrade-insecure-requests;",
-            'contentSecurityPolicySources' => ['img-src' => 'https://images.example.com'],
+            'contentSecurityPolicyAllow' => ['images' => ['img-src' => 'https://images.example.com']],
         ]), true);
 
         $this->assertSame(
@@ -135,35 +148,49 @@ class SecurityHeadersTest extends CakeTestCase
         );
     }
 
-    public function testContentSecurityPolicyPresets(): void
+    public function testContentSecurityPolicyAllowClasses(): void
     {
         $headers = SecurityHeaders::headers(SecurityHeaders::settings([
             'contentSecurityPolicy' => ['default-src' => ["'self'"]],
-            'contentSecurityPolicyPresets' => ['googleTagManager', 'googleAnalytics'],
-            'contentSecurityPolicySources' => ['connect-src' => 'https://api.example.com'],
+            'contentSecurityPolicyAllow' => [
+                GoogleTagManager::class,
+                SecurityHeadersTestStripe::class,
+                'api' => ['connect-src' => 'https://api.example.com'],
+            ],
         ]), true);
 
         $this->assertSame(
-            "default-src 'self'; script-src 'self' https://www.googletagmanager.com; img-src 'self' https://www.googletagmanager.com https://*.google-analytics.com; connect-src 'self' https://www.googletagmanager.com https://www.google.com https://*.google-analytics.com https://*.google.com https://api.example.com",
+            "default-src 'self'; script-src 'self' https://www.googletagmanager.com https://js.stripe.com; img-src 'self' https://www.googletagmanager.com; connect-src 'self' https://www.googletagmanager.com https://www.google.com https://api.example.com; frame-src 'self' https://js.stripe.com",
             $headers['Content-Security-Policy-Report-Only'],
         );
     }
 
-    public function testEveryPreset(): void
+    public function testEveryClassOfThePlugin(): void
     {
-        foreach (array_keys(SecurityHeaders::PRESETS) as $preset) {
-            $policy = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicyPresets' => [$preset]]), true)['Content-Security-Policy-Report-Only'];
+        $classes = array_map(static fn(string $file): string => 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . basename($file, '.php'), glob(dirname(__DIR__, 3) . '/Lib/ContentSecurityPolicy/*.php') ?: []);
+        $classes = array_values(array_filter($classes, static fn(string $class): bool => $class !== Sources::class));
 
-            $this->assertStringStartsWith("default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'; ", $policy, $preset);
-            $this->assertStringNotContainsString('script-src-elem', $policy, $preset);
+        $this->assertCount(7, $classes);
+        foreach ($classes as $class) {
+            $policy = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [$class]]), true)['Content-Security-Policy-Report-Only'];
+
+            $this->assertStringStartsWith("default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'; ", $policy, $class);
+            $this->assertStringNotContainsString('script-src-elem', $policy, $class);
         }
     }
 
-    public function testUnknownPreset(): void
+    public function testNotAClassOfSources(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Unknown preset of SecurityHeaders: googleTagManger');
-        SecurityHeaders::settings(['contentSecurityPolicyPresets' => ['googleTagManager', 'googleTagManger']]);
+        $this->expectExceptionMessage('Not a class of PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\Sources in contentSecurityPolicyAllow of SecurityHeaders: GoogleTagManger');
+        SecurityHeaders::settings(['contentSecurityPolicyAllow' => [GoogleTagManager::class, 'GoogleTagManger']]);
+    }
+
+    public function testNeitherAClassNorSources(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Neither a class nor sources by name in contentSecurityPolicyAllow of SecurityHeaders: stripe');
+        SecurityHeaders::settings(['contentSecurityPolicyAllow' => ['stripe' => 'https://js.stripe.com']]);
     }
 
     public function testNonce(): void
@@ -176,7 +203,7 @@ class SecurityHeadersTest extends CakeTestCase
 
         $this->assertSame("default-src 'self'; script-src 'self' 'nonce-abc'", SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy']);
         $this->assertSame("default-src 'self'", SecurityHeaders::headers($settings, true)['Content-Security-Policy']);
-        $settings['contentSecurityPolicySources'] = ['script-src-elem' => 'https://cdn.example.com'];
+        $settings['contentSecurityPolicyAllow'] = ['cdn' => ['script-src-elem' => 'https://cdn.example.com']];
         $this->assertSame(
             "default-src 'self'; script-src-elem 'self' https://cdn.example.com 'nonce-abc'; script-src 'self' 'nonce-abc'",
             SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy'],
