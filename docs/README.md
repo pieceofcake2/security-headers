@@ -133,7 +133,10 @@ script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-
 ```
 
 The classes of the plugin, in `PieceOfCake2\SecurityHeaders\ContentSecurityPolicy`, are the sources
-that the services of Google need, from [Google's guide](https://developers.google.com/tag-platform/security/guides/csp):
+that the services need. Those of Google's tags are from
+[Google's guide](https://developers.google.com/tag-platform/security/guides/csp), `GoogleMaps` from
+[the guide of the Maps JavaScript API](https://developers.google.com/maps/documentation/javascript/content-security-policy),
+and the others from the embed codes of the services, checked with an enforced policy in Chrome:
 
 | Class | For |
 | --- | --- |
@@ -144,9 +147,23 @@ that the services of Google need, from [Google's guide](https://developers.googl
 | `GoogleAds` | Google Ads: the conversions, the remarketing, the conversion linker and the user data |
 | `Floodlight` | Floodlight, with its custom scripts |
 | `MerchantCenter` | Google Merchant Center |
+| `GoogleMaps` | The Maps JavaScript API of Google Maps |
+| `GoogleMapsEmbed` | A map of Google Maps embedded with an iframe (Maps Embed API, or "Share" > "Embed a map") |
+| `YouTube` | The embedded players of YouTube (also `youtube-nocookie.com`), the IFrame Player API and the thumbnails |
+| `Facebook` | The JavaScript SDK of Facebook and its social plugins (Page plugin, embedded posts, Like button, ...) |
+| `MetaPixel` | The Meta Pixel (Facebook Pixel) |
+| `TikTok` | The embedded videos and profiles of TikTok |
+| `TikTokPixel` | The TikTok Pixel |
 
-They add the scripts to `script-src` instead of `script-src-elem` of the guide, so that the browsers
-without `script-src-elem`, such as Safari before 15.4, allow them too.
+They add the scripts to `script-src` instead of `script-src-elem` of Google's guide, so that the browsers
+without `script-src-elem`, such as Safari before 15.4, allow them too. Some services need more than sites:
+
+- `GoogleMaps` adds `'unsafe-eval'` to `script-src` and `'unsafe-inline'` to `style-src`, as Google's guide does.
+  Its inline script, e.g. the callback of the API, needs the nonce.
+- `Facebook` and `TikTok` add `'unsafe-inline'` to `style-src`: their scripts add styles to the page, and the
+  embed code of TikTok has a `style` attribute.
+- The services change their hosts from time to time. If the console of the browser reports a host that a class
+  does not have, add it to `contentSecurityPolicyAllow` with a name.
 
 To use the sources of a service in several applications, write a class of your own that implements
 `Sources`, e.g. in `src/Lib/`, and list it in the same way:

@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased
+
+- New classes of `contentSecurityPolicyAllow`: `GoogleMaps` (Maps JavaScript API), `GoogleMapsEmbed`, `YouTube`,
+  `Facebook` (JavaScript SDK and social plugins), `MetaPixel`, `TikTok` and `TikTokPixel`
+
 ## 1.0.0
 
 First release of `pieceofcake2/security-headers`.
