@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## Unreleased
+
+- `YahooAds`, the deprecated name of `YahooJapanAds`, is removed
+
 ## 1.0.3
 
 - `YahooAds` is renamed `YahooJapanAds`: its tags are those of Yahoo! JAPAN Ads, not of the ads of Yahoo.
