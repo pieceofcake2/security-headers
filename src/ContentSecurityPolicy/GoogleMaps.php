@@ -11,7 +11,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
  * script, e.g. the callback, needs the nonce: the `'unsafe-inline'` of `script-src` of the guide is left out. Add
  * the domains of the countries if you load the API from one, e.g. https://maps.google.fr
  */
-class GoogleMaps implements Sources
+class GoogleMaps implements NeedsNonce
 {
     /**
      * @inheritDoc

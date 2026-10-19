@@ -7,7 +7,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
  * The Meta Pixel (Facebook Pixel): its script of connect.facebook.net and its events sent to www.facebook.com, from
  * the base code of https://developers.facebook.com/docs/meta-pixel/get-started
  */
-class MetaPixel implements Sources
+class MetaPixel implements NeedsNonce
 {
     /**
      * @inheritDoc

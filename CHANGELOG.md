@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- The presets whose code has an inline script, e.g. `GoogleTagManager` and `MetaPixel`, turn on the nonce
+  (`NeedsNonce`): `contentSecurityPolicyNonce` is `null` by default, `true` and `false` still turn it on and off
+- A class of `contentSecurityPolicyAllow` that needs arguments to be created throws an
+  `InvalidArgumentException` with its name, instead of an `ArgumentCountError`
+- The docs said that PHP sends `Cache-Control: no-store` with the pages with a session: CakePHP 2 turns it off
+  for Internet Explorer 8 and before. They now show how to turn it on with `Session.cacheLimiter`
+- The docs explain the nonce for every inline script, and the snippets of Google Tag Manager and Google
+  Analytics are with their presets
 - With `contentSecurityPolicyNonce`, an element rendered with `requestAction()` gets the nonce of the page: it got
   a nonce of its own, which the policy of the page did not allow, so its inline scripts were blocked
 - A value of another type than a setting takes (e.g. an array for a header, `1` for `true`) and an unknown

@@ -11,7 +11,7 @@ off by default. The Content Security Policy is sent in report-only mode by defau
 - [Installation](#installation)
 - [Settings](#settings)
 - [Allowing Other Sites](#allowing-other-sites)
-- [Google Tag Manager and Google Analytics](#google-tag-manager-and-google-analytics)
+- [Inline Scripts and the Nonce](#inline-scripts-and-the-nonce)
 - [Headers for the Web Server or the CDN](#headers-for-the-web-server-or-the-cdn)
 - [Enforcing the Content Security Policy](#enforcing-the-content-security-policy)
 - [Changing the Headers in an Action](#changing-the-headers-in-an-action)
@@ -78,7 +78,7 @@ On by default:
 | --- | --- | --- | --- |
 | `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | The sources of the scripts, styles, images, frames and forms of the page. It is the main defense against XSS. An array of the directives and their sources, or the policy as a string. |
 | `contentSecurityPolicyAllow` | | `[]` | The other sites allowed by the policy: the classes of the services, e.g. `GoogleTagManager::class`, and the sources by directive with a name. See [Allowing Other Sites](#allowing-other-sites). |
-| `contentSecurityPolicyNonce` | | `false` | Adds a new nonce of each request to `script-src`, for the inline scripts that have it in their `nonce` attribute. See [Google Tag Manager and Google Analytics](#google-tag-manager-and-google-analytics). |
+| `contentSecurityPolicyNonce` | | `null` | Adds a new nonce of each request to `script-src`, for the inline scripts that have it in their `nonce` attribute. By default (`null`), on when a preset of `contentSecurityPolicyAllow` needs it; `true` always, `false` never. See [Inline Scripts and the Nonce](#inline-scripts-and-the-nonce). |
 | `contentSecurityPolicyReportOnly` | | `true` | Sends the policy as `Content-Security-Policy-Report-Only`: the browsers report the violations in the console (and to `reportUri`) without blocking them. See [Enforcing the Content Security Policy](#enforcing-the-content-security-policy). |
 | `reportUri` | | `false` | A URL that receives the violation reports, added to the policy as `report-uri`. |
 | `xFrameOptions` | `X-Frame-Options` | `SAMEORIGIN` | Whether other sites can show the page in a frame (clickjacking). `frame-ancestors` of the policy replaces it in modern browsers; this one is for the old ones. |
@@ -94,7 +94,7 @@ Off by default:
 | Setting | Header | Example | Why it is off |
 | --- | --- | --- | --- |
 | `strictTransportSecurity` | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | For the web server or the CDN. See [below](#headers-for-the-web-server-or-the-cdn). |
-| `cacheControl` | `Cache-Control` | `no-store` | For the web server or the CDN, and for the actions: PHP sends `no-store, no-cache, must-revalidate` for the pages with a session (the default `session.cache_limiter`), and the actions set their own with `$this->response->cache()` or `disableCache()`. |
+| `cacheControl` | `Cache-Control` | `no-store` | For the web server or the CDN, and for the actions: it would replace the `Cache-Control` of every response, also of the files that should be cached, and the actions set their own with `$this->response->cache()` or `disableCache()`. For the pages with a session, see [Pages with a session](#notes). |
 | `crossOriginEmbedderPolicy` | `Cross-Origin-Embedder-Policy` | `require-corp` | Breaks the images, scripts and frames of other sites that do not send `Cross-Origin-Resource-Policy` or CORS headers. Only needed for `SharedArrayBuffer` and precise timers. |
 | `xXssProtection` | `X-XSS-Protection` | `0` | Obsolete: the modern browsers ignore it, and the filter of the old ones could be abused. If a scanner asks for it, send `0`. |
 
@@ -162,8 +162,10 @@ class StripeSources implements Sources
 }
 ```
 
-A class that does not implement `Sources`, or a value without a name, throws an
-`InvalidArgumentException`.
+The plugin creates the class without arguments. If the code of the service has an inline script, implement
+`NeedsNonce` instead of `Sources`: the class then turns on the nonce
+([Inline Scripts and the Nonce](#inline-scripts-and-the-nonce)). A class that does not implement `Sources` or
+needs arguments, or a value without a name, throws an `InvalidArgumentException`.
 
 To write the whole policy instead, set `contentSecurityPolicy`, as an array or as a string:
 
@@ -182,55 +184,40 @@ Configure::write('SecurityHeaders', [
 
 For some actions only, use [`addSources()` of the component](#changing-the-headers-in-an-action).
 
-## Google Tag Manager and Google Analytics
+## Inline Scripts and the Nonce
 
-Google Tag Manager and Google Analytics have an inline script, which needs the nonce:
+The policy blocks the inline scripts: the `<script>` blocks, the attributes such as `onclick`, and the
+`javascript:` links. It allows a `<script>` block whose `nonce` attribute has the nonce of the response, a
+random value that changes with each response.
 
-```php
-Configure::write('SecurityHeaders', [
-    'contentSecurityPolicyAllow' => [GoogleTagManager::class, GoogleAnalytics::class],
-    'contentSecurityPolicyNonce' => true,
-]);
-```
+The nonce is on when a preset whose code has an inline script is in `contentSecurityPolicyAllow`, e.g.
+`GoogleTagManager` ("Turns on the nonce" on the [Presets](presets.md) page), or with
+`'contentSecurityPolicyNonce' => true`. `false` turns it off.
 
-Add the nonce to the inline script with `SecurityHeadersHelper`. Load the helper in
-`AppController`:
+Load the helper in `AppController`:
 
 ```php
 public $helpers = ['SecurityHeaders.SecurityHeaders'];
 ```
 
-Then add `nonce` to the snippet of Google Tag Manager. This snippet also passes the nonce to the
-script that it loads, as in Google's guide:
+Then give the nonce to the inline scripts of the views and the layouts:
 
 ```php
-<!-- In <head> of the layout -->
-<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;var n=d.querySelector('[nonce]');
-n&&j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'));f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-XXXXXXX');</script>
+<!-- In a view or a layout -->
+<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">
+    window.dataLayer = window.dataLayer || [];
+</script>
+<?= $this->Html->scriptBlock('console.log(1);', ['nonce' => $this->SecurityHeaders->nonce()]) ?>
 ```
 
-The snippet of Google Analytics without Tag Manager (`gtag.js`) needs it on its inline script too:
-`<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">`. Write the other inline scripts of your
-pages in the same way, or with `$this->Html->scriptBlock($script, ['nonce' => $this->SecurityHeaders->nonce()])`.
-
-- **The domains of the countries.** The features of Google Ads use the domain of the country of the
-  user, e.g. `www.google.co.jp`, and a policy cannot have a wildcard at the end of a host. Add the
-  ones of your users to `contentSecurityPolicyAllow`, e.g.
-  `'google-jp' => ['img-src' => ['https://*.google.co.jp'], 'connect-src' => ['https://*.google.co.jp']]`
-  for `GoogleAnalyticsWithAds` (`https://www.google.co.jp` for `GoogleAds`).
-- **Custom JavaScript variables** of Google Tag Manager need `'unsafe-eval'` in `script-src`. Use
-  custom templates instead if you can.
-- **Without the nonce**, Google's guide allows the inline scripts with `'unsafe-inline'`, which allows
-  the inline scripts of an XSS too. Add it to `contentSecurityPolicyAllow` only if you cannot
-  add the nonce.
-- **Caches.** A nonce is new for each response. A page cached with its HTML, by `CacheHelper` or by a
-  CDN, has the nonce of another response, so its inline scripts are blocked.
-- [Tag Assistant](https://tagassistant.google.com) lists the resources that the policy blocks, in
-  *Page issues*.
+- **Attributes and `javascript:` links** cannot have a nonce: move their code to a script file, e.g. with
+  `addEventListener()`. The application skeleton (pieceofcake2/app, as that of CakePHP 5) has two: the flash
+  messages hide on a click with an `onclick` attribute, and the error layout has a `javascript:history.back()`
+  link. They stop working when the policy is enforced.
+- **Without the nonce**, the guides of the services allow the inline scripts with `'unsafe-inline'`, which allows
+  the inline scripts of an XSS too. Add it to `contentSecurityPolicyAllow` only if you cannot add the nonce.
+- **Caches.** A nonce is new for each response. A page cached with its HTML, by `CacheHelper` or by a CDN, has the
+  nonce of another response, so its inline scripts are blocked.
 
 ## Headers for the Web Server or the CDN
 
@@ -316,6 +303,16 @@ Write the name of the header that the filter sends: in report-only mode, it is
   actions with the component. The requests with CORS, e.g. `fetch()` of an API, are not affected.
 - **Error pages.** The error pages get a response of their own, so the filter also sends the headers
   with `header()`. A header of the same name that the application or CakePHP sends later replaces it.
+- **Pages with a session.** CakePHP 2 gives PHP the cache limiter `must-revalidate` by default, for Internet
+  Explorer 8 and before. PHP does not know this value and sends no cache header, so the pages of a logged-in user
+  have no `Cache-Control`: a browser can show them again after the logout, and a shared cache can store them. Use
+  the cache limiter of PHP, as CakePHP 5 does, in `config/core.php`:
+
+  ```php
+  Configure::write('Session.cacheLimiter', 'nocache');
+  ```
+
+  PHP then sends `Cache-Control: no-store, no-cache, must-revalidate` with the pages that start a session.
 
 ## Without the Plugin
 

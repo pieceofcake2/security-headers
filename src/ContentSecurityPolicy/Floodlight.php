@@ -6,7 +6,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
 /**
  * Floodlight, from https://developers.google.com/tag-platform/security/guides/csp
  */
-class Floodlight implements Sources
+class Floodlight implements NeedsNonce
 {
     /**
      * @inheritDoc

@@ -11,7 +11,7 @@ Content Security Policy は、デフォルトでは報告のみのモードで�
 - [インストール](#installation)
 - [設定](#settings)
 - [ほかのサイトを許可する](#allowing-other-sites)
-- [Google タグマネージャーと Google アナリティクス](#google-tag-manager-and-google-analytics)
+- [インラインのスクリプトと nonce](#inline-scripts-and-the-nonce)
 - [ウェブサーバーや CDN で送るヘッダー](#headers-for-the-web-server-or-the-cdn)
 - [Content Security Policy を有効にする](#enforcing-the-content-security-policy)
 - [アクションでヘッダーを変える](#changing-the-headers-in-an-action)
@@ -81,7 +81,7 @@ Configure::write('SecurityHeaders', [
 | --- | --- | --- | --- |
 | `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | ページのスクリプト、スタイル、画像、フレーム、フォームの送信先を制限します。XSS に対する主な防御です。ディレクティブとソースの配列か、ポリシーの文字列で書きます。 |
 | `contentSecurityPolicyAllow` | | `[]` | ポリシーで許可するほかのサイト。サービスのクラス (例: `GoogleTagManager::class`) か、名前を付けたディレクティブごとのソースを書きます。[ほかのサイトを許可する](#allowing-other-sites) を参照してください。 |
-| `contentSecurityPolicyNonce` | | `false` | リクエストごとに新しい nonce を `script-src` に追加します。`nonce` 属性にその値を持つインラインのスクリプトが許可されます。[Google タグマネージャーと Google アナリティクス](#google-tag-manager-and-google-analytics) を参照してください。 |
+| `contentSecurityPolicyNonce` | | `null` | リクエストごとに新しい nonce を `script-src` に追加します。`nonce` 属性にその値を持つインラインのスクリプトが許可されます。デフォルト (`null`) では、`contentSecurityPolicyAllow` のプリセットが必要とするときにオンです。`true` で常にオン、`false` でオフです。[インラインのスクリプトと nonce](#inline-scripts-and-the-nonce) を参照してください。 |
 | `contentSecurityPolicyReportOnly` | | `true` | ポリシーを `Content-Security-Policy-Report-Only` で送ります。ブラウザーは違反をブロックせず、コンソール (と `reportUri`) に報告します。[Content Security Policy を有効にする](#enforcing-the-content-security-policy) を参照してください。 |
 | `reportUri` | | `false` | 違反の報告を受け取る URL。ポリシーに `report-uri` として追加します。 |
 | `xFrameOptions` | `X-Frame-Options` | `SAMEORIGIN` | ほかのサイトがページをフレームで表示できるか (クリックジャッキング)。モダンなブラウザーではポリシーの `frame-ancestors` が優先されます。古いブラウザー向けです。 |
@@ -97,7 +97,7 @@ Configure::write('SecurityHeaders', [
 | 設定 | ヘッダー | 例 | オフの理由 |
 | --- | --- | --- | --- |
 | `strictTransportSecurity` | `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | ウェブサーバーや CDN で送るものです。[下記](#headers-for-the-web-server-or-the-cdn)を参照してください。 |
-| `cacheControl` | `Cache-Control` | `no-store` | ウェブサーバーや CDN、各アクションで決めるものです。セッションのあるページには PHP が `no-store, no-cache, must-revalidate` を送り (デフォルトの `session.cache_limiter`)、アクションは `$this->response->cache()` や `disableCache()` で設定します。 |
+| `cacheControl` | `Cache-Control` | `no-store` | ウェブサーバーや CDN、各アクションで決めるものです。キャッシュすべきファイルも含め、すべてのレスポンスの `Cache-Control` を置き換えてしまいます。アクションは `$this->response->cache()` や `disableCache()` で設定します。セッションのあるページは [セッションのあるページ](#notes) を参照してください。 |
 | `crossOriginEmbedderPolicy` | `Cross-Origin-Embedder-Policy` | `require-corp` | `Cross-Origin-Resource-Policy` や CORS のヘッダーを送らないほかのサイトの画像、スクリプト、フレームが表示されなくなります。必要なのは `SharedArrayBuffer` や精度の高いタイマーを使う場合だけです。 |
 | `xXssProtection` | `X-XSS-Protection` | `0` | 廃止されたヘッダーです。モダンなブラウザーは無視し、古いブラウザーのフィルターは悪用されることがありました。スキャナーに求められた場合は `0` を送ってください。 |
 
@@ -167,7 +167,10 @@ class StripeSources implements Sources
 }
 ```
 
-`Sources` を実装していないクラスや、名前のない値は `InvalidArgumentException` を投げます。
+プラグインはクラスを引数なしで作ります。サービスのコードにインラインのスクリプトがある場合は、`Sources` の
+代わりに `NeedsNonce` を実装してください。そのクラスは nonce をオンにします
+([インラインのスクリプトと nonce](#inline-scripts-and-the-nonce))。`Sources` を実装していないクラス、引数が必要な
+クラス、名前のない値は `InvalidArgumentException` を投げます。
 
 代わりにポリシー全体を書くには、`contentSecurityPolicy` を配列か文字列で設定します。
 
@@ -186,58 +189,43 @@ Configure::write('SecurityHeaders', [
 
 一部のアクションだけで追加するには、[コンポーネントの `addSources()`](#changing-the-headers-in-an-action) を使います。
 
-<a id="google-tag-manager-and-google-analytics"></a>
+<a id="inline-scripts-and-the-nonce"></a>
 
-## Google タグマネージャーと Google アナリティクス
+## インラインのスクリプトと nonce
 
-Google タグマネージャーと Google アナリティクスにはインラインのスクリプトがあり、nonce が必要です。
+ポリシーは、インラインのスクリプト (`<script>` ブロック、`onclick` などの属性、`javascript:` のリンク) を
+ブロックします。`nonce` 属性にレスポンスの nonce (レスポンスごとに変わるランダムな値) を持つ `<script>` ブロック
+は許可します。
 
-```php
-Configure::write('SecurityHeaders', [
-    'contentSecurityPolicyAllow' => [GoogleTagManager::class, GoogleAnalytics::class],
-    'contentSecurityPolicyNonce' => true,
-]);
-```
+インラインのスクリプトを使うプリセット (`GoogleTagManager` など。[プリセット](presets.md) のページの
+「nonce をオンにします」) を `contentSecurityPolicyAllow` に入れると、nonce はオンになります。
+`'contentSecurityPolicyNonce' => true` でも常にオンになり、`false` でオフになります。
 
-インラインのスクリプトには、`SecurityHeadersHelper` で nonce を付けます。`AppController` でヘルパーを
-読み込みます。
+`AppController` でヘルパーを読み込みます。
 
 ```php
 public $helpers = ['SecurityHeaders.SecurityHeaders'];
 ```
 
-Google タグマネージャーのスニペットに `nonce` を付けます。このスニペットは、Google のガイドと同じように、
-読み込むスクリプトにも nonce を渡します。
+ビューやレイアウトのインラインのスクリプトに nonce を付けます。
 
 ```php
-<!-- レイアウトの <head> の中 -->
-<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;var n=d.querySelector('[nonce]');
-n&&j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'));f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-XXXXXXX');</script>
+<!-- ビューやレイアウトの中 -->
+<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">
+    window.dataLayer = window.dataLayer || [];
+</script>
+<?= $this->Html->scriptBlock('console.log(1);', ['nonce' => $this->SecurityHeaders->nonce()]) ?>
 ```
 
-タグマネージャーを使わない Google アナリティクスのスニペット (`gtag.js`) も、インラインのスクリプトに
-nonce が必要です: `<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">`。ページのほかのインラインの
-スクリプトも同じように書くか、`$this->Html->scriptBlock($script, ['nonce' => $this->SecurityHeaders->nonce()])`
-で出力してください。
-
-- **国のドメイン。** Google 広告の機能は、利用者の国のドメイン (例: `www.google.co.jp`) を使います。
-  ポリシーではホストの末尾にワイルドカードを使えないため、利用者の国のドメインを
-  `contentSecurityPolicyAllow` に追加してください。`GoogleAnalyticsWithAds` では
-  `'google-jp' => ['img-src' => ['https://*.google.co.jp'], 'connect-src' => ['https://*.google.co.jp']]`
-  (`GoogleAds` では `https://www.google.co.jp`) です。
-- **カスタム JavaScript 変数**を Google タグマネージャーで使うには、`script-src` に `'unsafe-eval'` が
-  必要です。できればカスタムテンプレートを使ってください。
-- **nonce を使わない場合**、Google のガイドは `'unsafe-inline'` でインラインのスクリプトを許可します。
+- **属性と `javascript:` のリンク**には nonce を付けられません。コードをスクリプトのファイルに移してください
+  (`addEventListener()` など)。アプリケーションのスケルトン (pieceofcake2/app。CakePHP 5 のものも同じ) には
+  2 つあります。フラッシュメッセージは `onclick` 属性でクリックすると消え、エラーのレイアウトには
+  `javascript:history.back()` のリンクがあります。ポリシーを有効にすると、これらは動かなくなります。
+- **nonce を使わない場合**、サービスのガイドは `'unsafe-inline'` でインラインのスクリプトを許可します。
   これは XSS のインラインのスクリプトも許可します。nonce を付けられない場合だけ、
   `contentSecurityPolicyAllow` に追加してください。
 - **キャッシュ。** nonce はレスポンスごとに変わります。`CacheHelper` や CDN が HTML ごとキャッシュした
   ページには別のレスポンスの nonce が入っているため、インラインのスクリプトがブロックされます。
-- [Tag Assistant](https://tagassistant.google.com) の「ページの問題」に、ポリシーがブロックしたリソースが
-  表示されます。
 
 <a id="headers-for-the-web-server-or-the-cdn"></a>
 
@@ -330,6 +318,17 @@ class WidgetsController extends AppController
   `same-site` か `cross-origin` にしてください。API の `fetch()` など、CORS のリクエストには影響しません。
 - **エラーページ。** エラーページは別のレスポンスを使うため、フィルターは `header()` でもヘッダーを
   送ります。あとからアプリケーションや CakePHP が同じ名前のヘッダーを送ると、そちらに置き換わります。
+- **セッションのあるページ。** CakePHP 2 は、Internet Explorer 8 以前のために、PHP のキャッシュリミッターを
+  デフォルトで `must-revalidate` にします。PHP はこの値を知らないのでキャッシュのヘッダーを送らず、ログイン中の
+  ページに `Cache-Control` が付きません。ログアウトしたあとにブラウザーがページを再び表示したり、共有のキャッシュが
+  ページを保存したりできます。CakePHP 5 と同じく PHP のキャッシュリミッターを使うよう、`config/core.php` で
+  設定してください。
+
+  ```php
+  Configure::write('Session.cacheLimiter', 'nocache');
+  ```
+
+  これで PHP は、セッションを開始するページに `Cache-Control: no-store, no-cache, must-revalidate` を送ります。
 
 <a id="without-the-plugin"></a>
 

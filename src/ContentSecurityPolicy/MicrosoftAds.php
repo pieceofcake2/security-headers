@@ -7,7 +7,7 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
  * The UET tag of Microsoft Advertising: its script https://bat.bing.com/bat.js and its events sent to bat.bing.com
  * and bat.bing.net
  */
-class MicrosoftAds implements Sources
+class MicrosoftAds implements NeedsNonce
 {
     /**
      * @inheritDoc

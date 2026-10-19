@@ -73,7 +73,7 @@ class SecurityHeadersFilter extends DispatcherFilter
         };
 
         $nonce = null;
-        if (!empty($settings['contentSecurityPolicyNonce'])) {
+        if (SecurityHeaders::usesNonce($settings)) {
             $nonce = SecurityHeaders::nonce();
             $request->addParams([self::NONCE => $nonce]);
         }

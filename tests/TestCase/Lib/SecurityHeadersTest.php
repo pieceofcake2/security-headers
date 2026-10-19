@@ -1,9 +1,23 @@
 <?php
 
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\NeedsNonce;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
+
+class SecurityHeadersTestWithArguments implements Sources
+{
+    public function __construct(private string $host)
+    {
+    }
+
+    public function sources(): array
+    {
+        return ['img-src' => [$this->host]];
+    }
+}
 
 class SecurityHeadersTestStripe implements Sources
 {
@@ -168,7 +182,7 @@ class SecurityHeadersTest extends CakeTestCase
     public function testEveryClassOfThePlugin(): void
     {
         $classes = array_map(static fn(string $file): string => 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . basename($file, '.php'), glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: []);
-        $classes = array_values(array_filter($classes, static fn(string $class): bool => $class !== Sources::class));
+        $classes = array_values(array_filter($classes, static fn(string $class): bool => !interface_exists($class)));
 
         $this->assertCount(24, $classes);
         foreach ($classes as $class) {
@@ -232,7 +246,7 @@ class SecurityHeadersTest extends CakeTestCase
             foreach (glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: [] as $path) {
                 $name = basename($path, '.php');
                 $class = 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . $name;
-                if ($class === Sources::class) {
+                if (interface_exists($class)) {
                     continue;
                 }
                 $this->assertMatchesRegularExpression('/^### `' . $name . '`/m', $docs, $file . ': ' . $name);
@@ -295,5 +309,56 @@ class SecurityHeadersTest extends CakeTestCase
                 $this->assertSame(sprintf('Invalid value of SecurityHeaders.%s: %s', $key, $type), $exception->getMessage());
             }
         }
+    }
+
+    /**
+     * The nonce is on by default when a class of contentSecurityPolicyAllow needs it, unless it is turned off
+     *
+     * @return void
+     */
+    public function testUsesNonce(): void
+    {
+        $this->assertFalse(SecurityHeaders::usesNonce(SecurityHeaders::settings([])));
+        $this->assertFalse(SecurityHeaders::usesNonce(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [YouTube::class, 'cdn' => ['script-src' => 'https://cdn.example.com']]])));
+        $this->assertTrue(SecurityHeaders::usesNonce(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [YouTube::class, GoogleTagManager::class]])));
+        $this->assertFalse(SecurityHeaders::usesNonce(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [GoogleTagManager::class], 'contentSecurityPolicyNonce' => false])));
+        $this->assertTrue(SecurityHeaders::usesNonce(SecurityHeaders::settings(['contentSecurityPolicyNonce' => true])));
+
+        $settings = SecurityHeaders::settings(['contentSecurityPolicy' => ['default-src' => ["'self'"]], 'contentSecurityPolicyAllow' => [GoogleTagManager::class]]);
+        $this->assertStringContainsString("'nonce-abc'", SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy-Report-Only']);
+    }
+
+    /**
+     * The classes of the plugin that need the nonce: those whose code has an inline script
+     *
+     * @return void
+     */
+    public function testClassesThatNeedTheNonce(): void
+    {
+        $needs = [];
+        foreach (glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: [] as $path) {
+            $class = 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . basename($path, '.php');
+            if (!interface_exists($class) && is_subclass_of($class, NeedsNonce::class)) {
+                $needs[] = basename($path, '.php');
+            }
+        }
+        sort($needs);
+
+        $this->assertSame([
+            'Floodlight', 'GoogleAds', 'GoogleAnalytics', 'GoogleAnalyticsWithAds', 'GoogleMaps', 'GoogleTagManager',
+            'LineTag', 'MerchantCenter', 'MetaPixel', 'MicrosoftAds', 'TikTokPixel', 'XPixel', 'YahooAds',
+        ], $needs);
+    }
+
+    /**
+     * A class that needs arguments to be created throws with its name, instead of an ArgumentCountError
+     *
+     * @return void
+     */
+    public function testClassWithArguments(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('must be created without arguments: SecurityHeadersTestWithArguments');
+        SecurityHeaders::settings(['contentSecurityPolicyAllow' => [SecurityHeadersTestWithArguments::class]]);
     }
 }
