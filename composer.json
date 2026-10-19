@@ -1,0 +1,35 @@
+{
+    "name": "pieceofcake2/security-headers",
+    "description": "CakePHP 2 plugin that adds the security headers to every response of an application",
+    "type": "cakephp-plugin",
+    "keywords": ["cakephp", "cakephp2", "security", "headers", "csp", "content-security-policy", "hsts"],
+    "license": "MIT",
+    "homepage": "https://pieceofcake2.github.io/security-headers/",
+    "require": {
+        "php": ">=8.0",
+        "composer/installers": "^1.0 || ^2.0",
+        "pieceofcake2/cakephp": "^2.12"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^9.6",
+        "pieceofcake2/app": "^2.2",
+        "pieceofcake2/phpcs-cakephp2": "^1.1",
+        "pieceofcake2/phpstan-cakephp2": "^1.0"
+    },
+    "autoload-dev": {
+        "exclude-from-classmap": [
+            "vendor/pieceofcake2/app/src/Console/Command/AppShell.php"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "composer/installers": true,
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "extra": {
+        "installer-name": "SecurityHeaders"
+    }
+}
