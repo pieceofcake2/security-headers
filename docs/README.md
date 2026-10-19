@@ -10,6 +10,8 @@ off by default. The Content Security Policy is sent in report-only mode by defau
 
 - [Installation](#installation)
 - [Settings](#settings)
+- [Allowing Other Sites](#allowing-other-sites)
+- [Google Tag Manager and Google Analytics](#google-tag-manager-and-google-analytics)
 - [Headers for the Web Server or the CDN](#headers-for-the-web-server-or-the-cdn)
 - [Enforcing the Content Security Policy](#enforcing-the-content-security-policy)
 - [Changing the Headers in an Action](#changing-the-headers-in-an-action)
@@ -62,7 +64,9 @@ not leave a header with its default silently.
 ```php
 Configure::write('SecurityHeaders', [
     'xFrameOptions' => 'DENY',
-    'contentSecurityPolicy' => "default-src 'self'; img-src 'self' https://cdn.example.com; frame-ancestors 'none'; form-action 'self'; base-uri 'self'; object-src 'none'",
+    'contentSecurityPolicyAllow' => [
+        'cdn' => ['script-src' => ['https://cdn.example.com']],
+    ],
 ]);
 ```
 
@@ -70,7 +74,9 @@ On by default:
 
 | Setting | Header | Default | What it does |
 | --- | --- | --- | --- |
-| `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | The sources of the scripts, styles, images, frames and forms of the page. It is the main defense against XSS. |
+| `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | The sources of the scripts, styles, images, frames and forms of the page. It is the main defense against XSS. An array of the directives and their sources, or the policy as a string. |
+| `contentSecurityPolicyAllow` | | `[]` | The other sites allowed by the policy: the classes of the services, e.g. `GoogleTagManager::class`, and the sources by directive with a name. See [Allowing Other Sites](#allowing-other-sites). |
+| `contentSecurityPolicyNonce` | | `false` | Adds a new nonce of each request to `script-src`, for the inline scripts that have it in their `nonce` attribute. See [Google Tag Manager and Google Analytics](#google-tag-manager-and-google-analytics). |
 | `contentSecurityPolicyReportOnly` | | `true` | Sends the policy as `Content-Security-Policy-Report-Only`: the browsers report the violations in the console (and to `reportUri`) without blocking them. See [Enforcing the Content Security Policy](#enforcing-the-content-security-policy). |
 | `reportUri` | | `false` | A URL that receives the violation reports, added to the policy as `report-uri`. |
 | `xFrameOptions` | `X-Frame-Options` | `SAMEORIGIN` | Whether other sites can show the page in a frame (clickjacking). `frame-ancestors` of the policy replaces it in modern browsers; this one is for the old ones. |
@@ -93,6 +99,148 @@ Off by default:
 The plugin does not remove `Server`, which the web server sends: turn it off in the web server
 (`server_tokens off;` in nginx, `ServerTokens Prod` and `ServerSignature Off` in Apache).
 
+## Allowing Other Sites
+
+To allow the scripts, images or frames of other sites, list them in `contentSecurityPolicyAllow`: the
+classes of the services, and the sources by directive with a name of your choice. The policy keeps
+its other directives and sources:
+
+```php
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAnalytics;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+
+Configure::write('SecurityHeaders', [
+    'contentSecurityPolicyAllow' => [
+        GoogleTagManager::class,
+        GoogleAnalytics::class,
+        'cdn' => [
+            'script-src' => ['https://cdn.example.com'],
+        ],
+        'youtube' => [
+            'frame-src' => ['https://www.youtube-nocookie.com'],
+        ],
+    ],
+]);
+```
+
+A directive that the policy does not have starts from the sources of the one that the browsers use
+instead, as `default-src` for `script-src`, so that `'self'` stays allowed. `'none'` is removed when
+you add sources to a directive. With the default policy, the sites of `cdn` and `youtube` above give:
+
+```text
+default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none';
+script-src 'self' https://cdn.example.com; frame-src 'self' https://www.youtube-nocookie.com
+```
+
+The classes of the plugin, in `PieceOfCake2\SecurityHeaders\ContentSecurityPolicy`, are the sources
+that the services of Google need, from [Google's guide](https://developers.google.com/tag-platform/security/guides/csp):
+
+| Class | For |
+| --- | --- |
+| `GoogleTagManager` | The container of Google Tag Manager |
+| `GoogleTagManagerPreview` | The preview mode of Google Tag Manager |
+| `GoogleAnalytics` | Google Analytics, without the features of Google Ads |
+| `GoogleAnalyticsWithAds` | Google Analytics, with the features of Google Ads (Google Signals, remarketing) |
+| `GoogleAds` | Google Ads: the conversions, the remarketing, the conversion linker and the user data |
+| `Floodlight` | Floodlight, with its custom scripts |
+| `MerchantCenter` | Google Merchant Center |
+
+They add the scripts to `script-src` instead of `script-src-elem` of the guide, so that the browsers
+without `script-src-elem`, such as Safari before 15.4, allow them too.
+
+To use the sources of a service in several applications, write a class of your own that implements
+`Sources`, e.g. in `src/Lib/`, and list it in the same way:
+
+```php
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
+
+class StripeSources implements Sources
+{
+    /**
+     * The sources of Stripe.js
+     *
+     * @return array<string, array<string>>
+     */
+    public function sources(): array
+    {
+        return [
+            'script-src' => ['https://js.stripe.com'],
+            'frame-src' => ['https://js.stripe.com'],
+        ];
+    }
+}
+```
+
+A class that does not implement `Sources`, or a value without a name, throws an
+`InvalidArgumentException`.
+
+To write the whole policy instead, set `contentSecurityPolicy`, as an array or as a string:
+
+```php
+Configure::write('SecurityHeaders', [
+    'contentSecurityPolicy' => [
+        'default-src' => ["'self'"],
+        'img-src' => ["'self'", 'data:'],
+        'frame-ancestors' => ["'none'"],
+        'form-action' => ["'self'"],
+        'base-uri' => ["'self'"],
+        'object-src' => ["'none'"],
+    ],
+]);
+```
+
+For some actions only, use [`addSources()` of the component](#changing-the-headers-in-an-action).
+
+## Google Tag Manager and Google Analytics
+
+Google Tag Manager and Google Analytics have an inline script, which needs the nonce:
+
+```php
+Configure::write('SecurityHeaders', [
+    'contentSecurityPolicyAllow' => [GoogleTagManager::class, GoogleAnalytics::class],
+    'contentSecurityPolicyNonce' => true,
+]);
+```
+
+Add the nonce to the inline script with `SecurityHeadersHelper`. Load the helper in
+`AppController`:
+
+```php
+public $helpers = ['SecurityHeaders.SecurityHeaders'];
+```
+
+Then add `nonce` to the snippet of Google Tag Manager. This snippet also passes the nonce to the
+script that it loads, as in Google's guide:
+
+```php
+<!-- In <head> of the layout -->
+<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;var n=d.querySelector('[nonce]');
+n&&j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'));f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-XXXXXXX');</script>
+```
+
+The snippet of Google Analytics without Tag Manager (`gtag.js`) needs it on its inline script too:
+`<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">`. Write the other inline scripts of your
+pages in the same way, or with `$this->Html->scriptBlock($script, ['nonce' => $this->SecurityHeaders->nonce()])`.
+
+- **The domains of the countries.** The features of Google Ads use the domain of the country of the
+  user, e.g. `www.google.co.jp`, and a policy cannot have a wildcard at the end of a host. Add the
+  ones of your users to `contentSecurityPolicyAllow`, e.g.
+  `'google-jp' => ['img-src' => ['https://*.google.co.jp'], 'connect-src' => ['https://*.google.co.jp']]`
+  for `GoogleAnalyticsWithAds` (`https://www.google.co.jp` for `GoogleAds`).
+- **Custom JavaScript variables** of Google Tag Manager need `'unsafe-eval'` in `script-src`. Use
+  custom templates instead if you can.
+- **Without the nonce**, Google's guide allows the inline scripts with `'unsafe-inline'`, which allows
+  the inline scripts of an XSS too. Add it to `contentSecurityPolicyAllow` only if you cannot
+  add the nonce.
+- **Caches.** A nonce is new for each response. A page cached with its HTML, by `CacheHelper` or by a
+  CDN, has the nonce of another response, so its inline scripts are blocked.
+- [Tag Assistant](https://tagassistant.google.com) lists the resources that the policy blocks, in
+  *Page issues*.
+
 ## Headers for the Web Server or the CDN
 
 Some headers belong to the web server, the load balancer or the CDN, and are off by default:
@@ -114,8 +262,8 @@ it is enforced. Most applications need some changes first, so it is sent as
 `Content-Security-Policy-Report-Only` by default:
 
 1. Open the pages of the application with the console of the browser open, and fix or allow
-   what is reported. Move inline scripts to files, or add the sources you need, e.g.
-   `script-src 'self' https://cdn.example.com`.
+   what is reported. Move inline scripts to files, or [add the sites](#allowing-other-sites)
+   that you need.
 2. Optionally, collect the reports of the users' browsers with `reportUri`.
 3. When nothing is reported any more, enforce the policy:
 
@@ -145,9 +293,21 @@ class WidgetsController extends AppController
         $this->SecurityHeaders->set('Content-Security-Policy', "frame-ancestors 'self' https://partner.example.com");
         $this->SecurityHeaders->disable('X-Frame-Options');
     }
+
+    /**
+     * Shows a video of YouTube
+     *
+     * @return void
+     */
+    public function video(): void
+    {
+        $this->SecurityHeaders->addSources('frame-src', 'https://www.youtube-nocookie.com');
+    }
 }
 ```
 
+- `addSources($directive, $sources)` adds sources to a directive of the Content Security Policy of
+  the settings, as `contentSecurityPolicyAllow` does.
 - `set($name, $value)` replaces the header of the settings.
 - `disable($name)` does not send the header in this response.
 

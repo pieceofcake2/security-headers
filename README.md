@@ -57,13 +57,22 @@ See [Installation](docs/README.md#installation) for the `installer-paths` settin
 Change the settings in `config/bootstrap.php`:
 
 ```php
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+
 Configure::write('SecurityHeaders', [
     'xFrameOptions' => 'DENY',
     'permissionsPolicy' => 'camera=(), microphone=(), geolocation=(), payment=()',
+    // Allows Google Tag Manager and the scripts of a CDN, in addition to those of the site
+    'contentSecurityPolicyAllow' => [
+        GoogleTagManager::class,
+        'cdn' => ['script-src' => ['https://cdn.example.com']],
+    ],
 ]);
 ```
 
-A setting is the value of its header, or `false` not to send it. See [Settings](docs/README.md#settings).
+A setting is the value of its header, or `false` not to send it. Classes of the plugin allow
+Google Tag Manager, Google Analytics and Google Ads in the Content Security Policy. See
+[Settings](docs/README.md#settings).
 
 ## Contributing
 

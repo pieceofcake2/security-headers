@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
+
 /**
  * The security headers of the responses of an application, from the settings of `Configure::read('SecurityHeaders')`.
  *
@@ -31,7 +33,19 @@ class SecurityHeaders
      */
     public const DEFAULTS = [
         // On by default: the headers of the application
-        'contentSecurityPolicy' => "default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'",
+        // The directives and their sources, or the policy as a string
+        'contentSecurityPolicy' => [
+            'default-src' => ["'self'"],
+            'frame-ancestors' => ["'self'"],
+            'form-action' => ["'self'"],
+            'base-uri' => ["'self'"],
+            'object-src' => ["'none'"],
+        ],
+        // The sources allowed in addition: classes of ContentSecurityPolicy\Sources, or arrays of sources by name, e.g.
+        // [GoogleTagManager::class, 'stripe' => ['script-src' => ['https://js.stripe.com']]]
+        'contentSecurityPolicyAllow' => [],
+        // A nonce of each request added to script-src, for the inline scripts: see nonce()
+        'contentSecurityPolicyNonce' => false,
         // The browsers report the violations without blocking them: adapt the policy to the application first
         'contentSecurityPolicyReportOnly' => true,
         'reportUri' => false,
@@ -50,6 +64,27 @@ class SecurityHeaders
     ];
 
     /**
+     * The directives that the browsers replace with another one when the policy does not have them
+     */
+    public const FALLBACKS = [
+        'script-src-elem' => ['script-src', 'default-src'],
+        'script-src-attr' => ['script-src', 'default-src'],
+        'style-src-elem' => ['style-src', 'default-src'],
+        'style-src-attr' => ['style-src', 'default-src'],
+        'frame-src' => ['child-src', 'default-src'],
+        'worker-src' => ['child-src', 'script-src', 'default-src'],
+        'child-src' => ['default-src'],
+        'connect-src' => ['default-src'],
+        'font-src' => ['default-src'],
+        'img-src' => ['default-src'],
+        'manifest-src' => ['default-src'],
+        'media-src' => ['default-src'],
+        'object-src' => ['default-src'],
+        'script-src' => ['default-src'],
+        'style-src' => ['default-src'],
+    ];
+
+    /**
      * The settings: the defaults with those of `Configure::read('SecurityHeaders')`
      *
      * @param array<string, mixed>|null $settings Settings, default: those of Configure
@@ -63,6 +98,7 @@ class SecurityHeaders
         if ($unknown !== []) {
             throw new InvalidArgumentException(sprintf('Unknown setting of SecurityHeaders: %s', implode(', ', $unknown)));
         }
+        self::allowed((array)($settings['contentSecurityPolicyAllow'] ?? []));
 
         return $settings + self::DEFAULTS;
     }
@@ -72,31 +108,148 @@ class SecurityHeaders
      *
      * @param array<string, mixed> $settings Settings of `settings()`
      * @param bool $https Whether the request is of HTTPS: `Strict-Transport-Security` is sent on HTTPS only
+     * @param string|null $nonce The nonce of the request, when `contentSecurityPolicyNonce` is on
      * @return array<string, string>
      */
-    public static function headers(array $settings, bool $https): array
+    public static function headers(array $settings, bool $https, ?string $nonce = null): array
     {
         $headers = [];
         foreach (self::HEADERS as $key => $name) {
             $value = $settings[$key] ?? false;
-            if ($value === false || $value === '') {
+            if ($value === false || $value === '' || $value === []) {
                 continue;
             }
-            $value = (string)$value;
             if ($key === 'strictTransportSecurity' && !$https) {
                 continue;
             }
             if ($key === 'contentSecurityPolicy') {
-                if (is_string($settings['reportUri'] ?? null) && $settings['reportUri'] !== '') {
-                    $value = rtrim($value, '; ') . '; report-uri ' . $settings['reportUri'];
+                $directives = self::directives($value);
+                foreach (self::allowed((array)($settings['contentSecurityPolicyAllow'] ?? [])) as $sources) {
+                    $directives = self::addSources($directives, $sources);
                 }
+                if ($nonce !== null && !empty($settings['contentSecurityPolicyNonce'])) {
+                    // script-src-elem replaces script-src for the <script> elements
+                    $nonced = ['script-src' => "'nonce-" . $nonce . "'"];
+                    if (isset($directives['script-src-elem'])) {
+                        $nonced['script-src-elem'] = $nonced['script-src'];
+                    }
+                    $directives = self::addSources($directives, $nonced);
+                }
+                if (is_string($settings['reportUri'] ?? null) && $settings['reportUri'] !== '') {
+                    $directives['report-uri'] = [$settings['reportUri']];
+                }
+                $value = self::policy($directives);
                 if (!empty($settings['contentSecurityPolicyReportOnly'])) {
                     $name = 'Content-Security-Policy-Report-Only';
                 }
             }
-            $headers[$name] = $value;
+            $headers[$name] = (string)$value;
         }
 
         return $headers;
+    }
+
+    /**
+     * The sources allowed in addition, by name
+     *
+     * @param array<int|string, string|array<string, string|array<string>>> $allow Classes of
+     *   `ContentSecurityPolicy\Sources`, or arrays of sources by directive by name
+     * @return array<string, array<string, string|array<string>>>
+     * @throws \InvalidArgumentException When a class is unknown or does not implement `ContentSecurityPolicy\Sources`
+     */
+    public static function allowed(array $allow): array
+    {
+        $allowed = [];
+        foreach ($allow as $name => $sources) {
+            if (is_int($name) && is_string($sources)) {
+                if (!is_subclass_of($sources, Sources::class)) {
+                    throw new InvalidArgumentException(sprintf('Not a class of %s in contentSecurityPolicyAllow of SecurityHeaders: %s', Sources::class, $sources));
+                }
+                $allowed[$sources] = (new $sources())->sources();
+            } elseif (is_string($name) && is_array($sources)) {
+                $allowed[$name] = $sources;
+            } else {
+                throw new InvalidArgumentException(sprintf('Neither a class nor sources by name in contentSecurityPolicyAllow of SecurityHeaders: %s', is_string($name) ? $name : var_export($sources, true)));
+            }
+        }
+
+        return $allowed;
+    }
+
+    /**
+     * A new nonce, for the `nonce` attributes of the inline scripts of a response
+     *
+     * @return string
+     */
+    public static function nonce(): string
+    {
+        return base64_encode(random_bytes(16));
+    }
+
+    /**
+     * The directives of a policy, from a string or an array of directives
+     *
+     * @param array<string, string|array<string>>|string $policy Policy, e.g. `default-src 'self'; img-src 'self' data:`
+     * @return array<string, array<string>> Sources by directive
+     */
+    public static function directives(array|string $policy): array
+    {
+        if (is_string($policy)) {
+            $policy = array_reduce(explode(';', $policy), static function (array $directives, string $directive): array {
+                $tokens = preg_split('/\s+/', trim($directive), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+                if ($tokens !== []) {
+                    $directives[strtolower(array_shift($tokens))] ??= $tokens;
+                }
+
+                return $directives;
+            }, []);
+        }
+
+        return array_map(static fn($sources): array => array_values((array)$sources), $policy);
+    }
+
+    /**
+     * Adds sources to the directives. A directive that the policy does not have starts from the sources of the
+     * directive that the browsers use instead, e.g. `default-src` for `script-src`, so that adding a site to it does
+     * not disallow the others.
+     *
+     * @param array<string, array<string>> $directives Sources by directive
+     * @param array<string, string|array<string>> $sources Sources to add by directive
+     * @return array<string, array<string>>
+     */
+    public static function addSources(array $directives, array $sources): array
+    {
+        foreach ($sources as $directive => $added) {
+            $directive = strtolower((string)$directive);
+            if (!isset($directives[$directive])) {
+                $directives[$directive] = [];
+                foreach (self::FALLBACKS[$directive] ?? [] as $fallback) {
+                    if (isset($directives[$fallback])) {
+                        $directives[$directive] = $directives[$fallback];
+                        break;
+                    }
+                }
+            }
+            $current = array_values(array_diff($directives[$directive], ["'none'"]));
+            $directives[$directive] = array_values(array_unique(array_merge($current, array_values((array)$added))));
+        }
+
+        return $directives;
+    }
+
+    /**
+     * The policy of the directives
+     *
+     * @param array<string, array<string>> $directives Sources by directive
+     * @return string
+     */
+    public static function policy(array $directives): string
+    {
+        $policy = [];
+        foreach ($directives as $directive => $sources) {
+            $policy[] = trim($directive . ' ' . implode(' ', $sources));
+        }
+
+        return implode('; ', $policy);
     }
 }
