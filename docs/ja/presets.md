@@ -37,9 +37,9 @@ Configure::write('SecurityHeaders', [
 
 ### `GoogleTagManager`
 
-Google タグマネージャーのコンテナ。
+Google タグマネージャーのコンテナ。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
-根拠: [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)。 **毎週確認。**
+根拠: [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -47,7 +47,20 @@ Google タグマネージャーのコンテナ。
 | `img-src` | `https://www.googletagmanager.com` |
 | `connect-src` | `https://www.googletagmanager.com` `https://www.google.com` |
 
-インラインのスニペットには nonce が必要です。[Google タグマネージャーと Google アナリティクス](README.md#google-tag-manager-and-google-analytics) を参照してください。
+Google のガイドと同じく、読み込むスクリプトにも nonce を渡すスニペットです。
+
+```php
+<!-- レイアウトの <head> の中 -->
+<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;var n=d.querySelector('[nonce]');
+n&&j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'));f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-XXXXXXX');</script>
+```
+
+カスタム JavaScript 変数には `script-src` に `'unsafe-eval'` が必要です。できればカスタムテンプレートを使ってください。
+[Tag Assistant](https://tagassistant.google.com) の「ページの問題」に、ポリシーがブロックしたリソースが表示されます。
 
 <a id="googletagmanagerpreview"></a>
 
@@ -68,9 +81,9 @@ Google タグマネージャーのプレビューモード。
 
 ### `GoogleAnalytics`
 
-Google アナリティクス (Google 広告の機能なし)。
+Google アナリティクス (Google 広告の機能なし)。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
-根拠: [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)。 **毎週確認。**
+根拠: [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -78,11 +91,13 @@ Google アナリティクス (Google 広告の機能なし)。
 | `img-src` | `https://www.googletagmanager.com` `https://*.google-analytics.com` |
 | `connect-src` | `https://www.googletagmanager.com` `https://*.google-analytics.com` `https://*.google.com` |
 
+タグマネージャーを使わない場合、`gtag.js` のスニペットにインラインのスクリプトがあります: `<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">`。
+
 <a id="googleanalyticswithads"></a>
 
 ### `GoogleAnalyticsWithAds`
 
-Google アナリティクス (Google シグナルやリマーケティングなど、Google 広告の機能あり)。
+Google アナリティクス (Google シグナルやリマーケティングなど、Google 広告の機能あり)。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
 根拠: [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)。
 
@@ -148,7 +163,7 @@ Adobe Experience Platform の Web SDK。`*.demdex.net` は訪問者の移行 (`i
 
 ### `GoogleAds`
 
-Google 広告のコンバージョン、リマーケティング、コンバージョンリンカー、ユーザー提供データ。
+Google 広告のコンバージョン、リマーケティング、コンバージョンリンカー、ユーザー提供データ。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
 根拠: [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)。
 
@@ -165,7 +180,7 @@ Google 広告のコンバージョン、リマーケティング、コンバー�
 
 ### `Floodlight`
 
-Floodlight (カスタムスクリプトを含む)。
+Floodlight (カスタムスクリプトを含む)。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
 根拠: [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)。
 
@@ -179,7 +194,7 @@ Floodlight (カスタムスクリプトを含む)。
 
 ### `MerchantCenter`
 
-Google Merchant Center。
+Google Merchant Center。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
 根拠: [Google のガイド](https://developers.google.com/tag-platform/security/guides/csp?hl=ja)。
 
@@ -193,9 +208,9 @@ Google Merchant Center。
 
 ### `MetaPixel`
 
-Meta ピクセル (Facebook ピクセル)。Facebook と Instagram の広告。
+Meta ピクセル (Facebook ピクセル)。Facebook と Instagram の広告。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
-根拠: [Meta の基本コード](https://developers.facebook.com/docs/meta-pixel/get-started)。 **毎週確認。**
+根拠: [Meta の基本コード](https://developers.facebook.com/docs/meta-pixel/get-started)。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -207,9 +222,9 @@ Meta ピクセル (Facebook ピクセル)。Facebook と Instagram の広告。
 
 ### `TikTokPixel`
 
-TikTok ピクセル。
+TikTok ピクセル。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
-根拠: TikTok の基本コード。 **毎週確認。**
+根拠: TikTok の基本コード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -221,9 +236,9 @@ TikTok ピクセル。
 
 ### `XPixel`
 
-X 広告の X ピクセル (旧 Twitter ピクセル)。
+X 広告の X ピクセル (旧 Twitter ピクセル)。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
-根拠: X の基本コード。 **毎週確認。**
+根拠: X の基本コード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -235,9 +250,9 @@ X 広告の X ピクセル (旧 Twitter ピクセル)。
 
 ### `LineTag`
 
-LINE 広告の LINE Tag。
+LINE 広告の LINE Tag。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
-根拠: LINE の基本コード。 **毎週確認。**
+根拠: LINE の基本コード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -249,9 +264,9 @@ LINE 広告の LINE Tag。
 
 ### `YahooAds`
 
-Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン測定タグとサイトリターゲティングタグ、サイトジェネラルタグ (ytag.js)。
+Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン測定タグとサイトリターゲティングタグ、サイトジェネラルタグ (ytag.js)。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
-根拠: [Yahoo!広告のお知らせ](https://www.lycbiz.com/jp/news/yahoo-ads/20230215) とタグ。 **毎週確認。**
+根拠: [Yahoo!広告のお知らせ](https://www.lycbiz.com/jp/news/yahoo-ads/20230215) とタグ。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -265,9 +280,9 @@ Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン�
 
 ### `MicrosoftAds`
 
-Microsoft 広告の UET タグ。
+Microsoft 広告の UET タグ。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
-根拠: Microsoft の基本コード。 **毎週確認。**
+根拠: Microsoft の基本コード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -283,9 +298,9 @@ Microsoft 広告の UET タグ。
 
 ### `GoogleMaps`
 
-Google マップの Maps JavaScript API。
+Google マップの Maps JavaScript API。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
-根拠: [Maps JavaScript API のガイド](https://developers.google.com/maps/documentation/javascript/content-security-policy?hl=ja) (許可リストのポリシー)。 **毎週確認。**
+根拠: [Maps JavaScript API のガイド](https://developers.google.com/maps/documentation/javascript/content-security-policy?hl=ja) (許可リストのポリシー)。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -305,7 +320,7 @@ Google マップの Maps JavaScript API。
 
 iframe で埋め込んだ Google マップ (Maps Embed API、または「共有」>「地図を埋め込む」)。
 
-根拠: 埋め込みコード。 **毎週確認。**
+根拠: 埋め込みコード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -317,7 +332,7 @@ iframe で埋め込んだ Google マップ (Maps Embed API、または「共有�
 
 YouTube の埋め込みプレーヤー (`www.youtube.com` と、プライバシー強化モードの `www.youtube-nocookie.com`)、IFrame Player API、`i.ytimg.com` のサムネイル。
 
-根拠: 埋め込みコード。 **毎週確認。**
+根拠: 埋め込みコード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -331,7 +346,7 @@ YouTube の埋め込みプレーヤー (`www.youtube.com` と、プライバシ�
 
 Facebook の JavaScript SDK とソーシャルプラグイン (ページプラグイン、埋め込み投稿、いいね！ボタン、コメント)。
 
-根拠: 埋め込みコード。 **毎週確認。**
+根拠: 埋め込みコード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -347,7 +362,7 @@ SDK が `<style>` 要素を追加するため、`style-src` に `'unsafe-inline'
 
 Instagram の埋め込み投稿。
 
-根拠: 埋め込みコード。 **毎週確認。**
+根拠: 埋め込みコード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -363,7 +378,7 @@ Instagram の埋め込み投稿。
 
 X (旧 Twitter) の埋め込みポスト、タイムライン、ボタン。`syndication.twitter.com` はタイムラインのためです。
 
-根拠: 埋め込みコード。 **毎週確認。**
+根拠: 埋め込みコード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -379,7 +394,7 @@ X (旧 Twitter) の埋め込みポスト、タイムライン、ボタン。`syn
 
 TikTok の埋め込み動画とプロフィール。
 
-根拠: 埋め込みコード。 **毎週確認。**
+根拠: 埋め込みコード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |
@@ -397,7 +412,7 @@ TikTok の埋め込み動画とプロフィール。
 
 LINE のソーシャルプラグイン (「LINEで送る」ボタン、「友だち追加」ボタン)。
 
-根拠: 埋め込みコード。 **毎週確認。**
+根拠: 埋め込みコード。**毎週確認。**
 
 | ディレクティブ | ソース |
 | --- | --- |

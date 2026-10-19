@@ -33,7 +33,7 @@ Configure::write('SecurityHeaders', [
 
 ### `GoogleTagManager` {#googletagmanager}
 
-The container of Google Tag Manager.
+The container of Google Tag Manager. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [Google's guide](https://developers.google.com/tag-platform/security/guides/csp). **Checked every week.**
 
@@ -43,7 +43,20 @@ From [Google's guide](https://developers.google.com/tag-platform/security/guides
 | `img-src` | `https://www.googletagmanager.com` |
 | `connect-src` | `https://www.googletagmanager.com` `https://www.google.com` |
 
-Its inline snippet needs the nonce: see [Google Tag Manager and Google Analytics](README.md#google-tag-manager-and-google-analytics).
+Its snippet, with the nonce, which it also passes to the script that it loads, as in Google's guide:
+
+```php
+<!-- In <head> of the layout -->
+<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;var n=d.querySelector('[nonce]');
+n&&j.setAttribute('nonce',n.nonce||n.getAttribute('nonce'));f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-XXXXXXX');</script>
+```
+
+The custom JavaScript variables need `'unsafe-eval'` in `script-src`: use custom templates instead if you can.
+[Tag Assistant](https://tagassistant.google.com) lists the resources that the policy blocks, in *Page issues*.
 
 ### `GoogleTagManagerPreview` {#googletagmanagerpreview}
 
@@ -60,7 +73,7 @@ From [Google's guide](https://developers.google.com/tag-platform/security/guides
 
 ### `GoogleAnalytics` {#googleanalytics}
 
-Google Analytics, without the features of Google Ads.
+Google Analytics, without the features of Google Ads. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [Google's guide](https://developers.google.com/tag-platform/security/guides/csp). **Checked every week.**
 
@@ -70,9 +83,11 @@ From [Google's guide](https://developers.google.com/tag-platform/security/guides
 | `img-src` | `https://www.googletagmanager.com` `https://*.google-analytics.com` |
 | `connect-src` | `https://www.googletagmanager.com` `https://*.google-analytics.com` `https://*.google.com` |
 
+Without Tag Manager, its `gtag.js` snippet has an inline script: `<script nonce="<?= h($this->SecurityHeaders->nonce()) ?>">`.
+
 ### `GoogleAnalyticsWithAds` {#googleanalyticswithads}
 
-Google Analytics, with the features of Google Ads (Google Signals, remarketing).
+Google Analytics, with the features of Google Ads (Google Signals, remarketing). **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [Google's guide](https://developers.google.com/tag-platform/security/guides/csp).
 
@@ -128,7 +143,7 @@ Add your edge domain if `edgeDomain` is a domain of yours (a CNAME).
 
 ### `GoogleAds` {#googleads}
 
-Google Ads: the conversions, the remarketing, the conversion linker and the user data.
+Google Ads: the conversions, the remarketing, the conversion linker and the user data. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [Google's guide](https://developers.google.com/tag-platform/security/guides/csp).
 
@@ -143,7 +158,7 @@ Add the domain of the country of your users, e.g. `https://www.google.co.jp` to 
 
 ### `Floodlight` {#floodlight}
 
-Floodlight, with its custom scripts.
+Floodlight, with its custom scripts. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [Google's guide](https://developers.google.com/tag-platform/security/guides/csp).
 
@@ -155,7 +170,7 @@ From [Google's guide](https://developers.google.com/tag-platform/security/guides
 
 ### `MerchantCenter` {#merchantcenter}
 
-Google Merchant Center.
+Google Merchant Center. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [Google's guide](https://developers.google.com/tag-platform/security/guides/csp).
 
@@ -167,7 +182,7 @@ From [Google's guide](https://developers.google.com/tag-platform/security/guides
 
 ### `MetaPixel` {#metapixel}
 
-The Meta Pixel (Facebook Pixel), for the ads of Facebook and Instagram.
+The Meta Pixel (Facebook Pixel), for the ads of Facebook and Instagram. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [the base code of Meta](https://developers.facebook.com/docs/meta-pixel/get-started). **Checked every week.**
 
@@ -179,7 +194,7 @@ From [the base code of Meta](https://developers.facebook.com/docs/meta-pixel/get
 
 ### `TikTokPixel` {#tiktokpixel}
 
-The TikTok Pixel.
+The TikTok Pixel. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From the base code of TikTok. **Checked every week.**
 
@@ -191,7 +206,7 @@ From the base code of TikTok. **Checked every week.**
 
 ### `XPixel` {#xpixel}
 
-The X Pixel (formerly Twitter Pixel) of X Ads.
+The X Pixel (formerly Twitter Pixel) of X Ads. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From the base code of X. **Checked every week.**
 
@@ -203,7 +218,7 @@ From the base code of X. **Checked every week.**
 
 ### `LineTag` {#linetag}
 
-The LINE Tag of LINE Ads.
+The LINE Tag of LINE Ads. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From the base code of LINE. **Checked every week.**
 
@@ -215,7 +230,7 @@ From the base code of LINE. **Checked every week.**
 
 ### `YahooAds` {#yahooads}
 
-The conversion tags and the site retargeting tags of Yahoo! JAPAN Ads, of the search ads and the display ads, with the site general tag (ytag.js).
+The conversion tags and the site retargeting tags of Yahoo! JAPAN Ads, of the search ads and the display ads, with the site general tag (ytag.js). **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [the announcement of Yahoo! JAPAN Ads](https://www.lycbiz.com/jp/news/yahoo-ads/20230215) and the tags. **Checked every week.**
 
@@ -229,7 +244,7 @@ The tags of the search ads load their scripts from and send their events to `b9x
 
 ### `MicrosoftAds` {#microsoftads}
 
-The UET tag of Microsoft Advertising.
+The UET tag of Microsoft Advertising. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From the base code of Microsoft. **Checked every week.**
 
@@ -243,7 +258,7 @@ From the base code of Microsoft. **Checked every week.**
 
 ### `GoogleMaps` {#googlemaps}
 
-The Maps JavaScript API of Google Maps.
+The Maps JavaScript API of Google Maps. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [the guide of the Maps JavaScript API](https://developers.google.com/maps/documentation/javascript/content-security-policy) (the allowlist policy). **Checked every week.**
 
