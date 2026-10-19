@@ -264,7 +264,7 @@ LINE 広告の LINE Tag。**nonce をオンにします**。コードにイン�
 
 ### `YahooJapanAds`
 
-Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン測定タグとサイトリターゲティングタグ、サイトジェネラルタグ (ytag.js)。1.0.3 より前の名前は `YahooAds` です。その名前も使えますが、非推奨です。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
+Yahoo!広告 (検索広告とディスプレイ広告) のコンバージョン測定タグとサイトリターゲティングタグ、サイトジェネラルタグ (ytag.js)。**nonce をオンにします**。コードにインラインのスクリプトがあります。[インラインのスクリプトと nonce](README.md#inline-scripts-and-the-nonce) を参照してください。
 
 根拠: [Yahoo!広告のお知らせ](https://www.lycbiz.com/jp/news/yahoo-ads/20230215) とタグ。**毎週確認。**
 

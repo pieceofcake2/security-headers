@@ -3,8 +3,6 @@
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\NeedsNonce;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
-use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YahooAds;
-use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YahooJapanAds;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
@@ -365,24 +363,13 @@ class SecurityHeadersTest extends CakeTestCase
     }
 
     /**
-     * A class of the plugin that is a preset: not an interface, nor a deprecated name of another preset
+     * A class of the plugin that is a preset, not an interface
      *
      * @param string $class Class
      * @return bool
      */
     private static function isPreset(string $class): bool
     {
-        return !interface_exists($class) && !str_contains((string)(new ReflectionClass($class))->getDocComment(), '@deprecated');
-    }
-
-    /**
-     * The deprecated name of YahooJapanAds keeps working
-     *
-     * @return void
-     */
-    public function testYahooAds(): void
-    {
-        $this->assertSame((new YahooJapanAds())->sources(), (new YahooAds())->sources());
-        $this->assertTrue(SecurityHeaders::usesNonce(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [YahooAds::class]])));
+        return !interface_exists($class);
     }
 }

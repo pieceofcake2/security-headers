@@ -230,7 +230,7 @@ From the base code of LINE. **Checked every week.**
 
 ### `YahooJapanAds` {#yahoojapanads}
 
-The conversion tags and the site retargeting tags of Yahoo! JAPAN Ads, of the search ads and the display ads, with the site general tag (ytag.js). Named `YahooAds` before 1.0.3: that name still works, but is deprecated. **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
+The conversion tags and the site retargeting tags of Yahoo! JAPAN Ads, of the search ads and the display ads, with the site general tag (ytag.js). **Turns on the nonce**: its code has an inline script, see [Inline Scripts and the Nonce](README.md#inline-scripts-and-the-nonce).
 
 From [the announcement of Yahoo! JAPAN Ads](https://www.lycbiz.com/jp/news/yahoo-ads/20230215) and the tags. **Checked every week.**
 
