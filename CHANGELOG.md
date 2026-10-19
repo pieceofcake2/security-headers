@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased
+
+- With `contentSecurityPolicyNonce`, an element rendered with `requestAction()` gets the nonce of the page: it got
+  a nonce of its own, which the policy of the page did not allow, so its inline scripts were blocked
+
 ## 1.0.2
 
 - `TikTok` allows `*.tiktokcdn-us.com`: TikTok serves the files of its embeds from there to the users in the

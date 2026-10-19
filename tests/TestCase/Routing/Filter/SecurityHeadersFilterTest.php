@@ -5,6 +5,7 @@ App::uses('CakeRequest', 'Network');
 App::uses('CakeResponse', 'Network');
 App::uses('Dispatcher', 'Routing');
 App::uses('DispatcherFilter', 'Routing');
+App::uses('Router', 'Routing');
 App::uses('SecurityHeadersFilter', 'SecurityHeaders.Routing/Filter');
 
 /**
@@ -124,5 +125,61 @@ class SecurityHeadersFilterTest extends CakeTestCase
         $this->dispatch($request);
 
         $this->assertFalse($request->param(SecurityHeadersFilter::NONCE));
+    }
+
+    /**
+     * A request of requestAction() uses the nonce of the main request, and gets no header: its response is not
+     * sent to the browser
+     *
+     * @return void
+     */
+    public function testRequestAction(): void
+    {
+        Configure::write('SecurityHeaders.contentSecurityPolicyNonce', true);
+        $main = new CakeRequest('/posts');
+        $main->addParams([SecurityHeadersFilter::NONCE => 'main']);
+        Router::setRequestInfo($main);
+        $request = new CakeRequest('/posts/sidebar');
+        $response = new CakeResponse();
+        try {
+            (new SecurityHeadersFilter())->beforeDispatch(new CakeEvent('Dispatcher.beforeDispatch', null, [
+                'request' => $request,
+                'response' => $response,
+                'additionalParams' => ['requested' => 1, 'return' => 1],
+            ]));
+        } finally {
+            Router::popRequest();
+        }
+
+        $this->assertSame('main', $request->param(SecurityHeadersFilter::NONCE));
+        $this->assertSame([], $response->header());
+        $this->assertSame([], $this->sent);
+    }
+
+    /**
+     * Through requestAction(), the nonce of the element is that of the page
+     *
+     * @return void
+     */
+    public function testRequestActionThroughTheDispatcher(): void
+    {
+        Configure::write('SecurityHeaders.contentSecurityPolicyNonce', true);
+        Configure::write('Dispatcher.filters', ['SecurityHeadersTestAssetFilter', 'SecurityHeaders.SecurityHeadersFilter']);
+        $main = new CakeRequest('/posts');
+        $response = new CakeResponse();
+        $request = new CakeRequest('/posts/sidebar');
+        try {
+            (new Dispatcher())->dispatch($main, $response);
+            Router::setRequestInfo($main);
+            (new Dispatcher())->dispatch($request, new CakeResponse(), ['requested' => 1, 'return' => 1]);
+        } finally {
+            Router::popRequest();
+            Configure::delete('Dispatcher.filters');
+        }
+        $nonce = $main->param(SecurityHeadersFilter::NONCE);
+
+        $this->assertIsString($nonce);
+        $this->assertSame($nonce, $request->param(SecurityHeadersFilter::NONCE));
+        $this->assertStringContainsString("'nonce-" . $nonce . "'", $response->header()['Content-Security-Policy-Report-Only']);
     }
 }
