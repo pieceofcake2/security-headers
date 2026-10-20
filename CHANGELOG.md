@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased
+
+- `MetaPixel` allows `https://www.facebook.com` in `frame-src` and `form-action`: the pixel posts large events with a
+  form in a hidden frame to `https://www.facebook.com/tr/`, which the policy blocked
+
 ## 1.0.4
 
 - `YahooAds`, the deprecated name of `YahooJapanAds`, is removed
