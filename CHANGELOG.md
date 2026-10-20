@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.0.6
 
 - New class of `contentSecurityPolicyAllow`: `GoogleFonts` (the stylesheets of `fonts.googleapis.com` and the font
   files of `fonts.gstatic.com`)
