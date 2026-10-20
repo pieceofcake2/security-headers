@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased
+
+- New class of `contentSecurityPolicyAllow`: `GoogleFonts` (the stylesheets of `fonts.googleapis.com` and the font
+  files of `fonts.gstatic.com`)
+
 ## 1.0.5
 
 - `MetaPixel` allows `https://www.facebook.com` in `frame-src` and `form-action`: the pixel posts large events with a

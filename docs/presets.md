@@ -27,7 +27,7 @@ Configure::write('SecurityHeaders', [
 
 - [Tag Managers and Analytics](#tag-managers-and-analytics): [`GoogleTagManager`](#googletagmanager), [`GoogleTagManagerPreview`](#googletagmanagerpreview), [`GoogleAnalytics`](#googleanalytics), [`GoogleAnalyticsWithAds`](#googleanalyticswithads), [`AdobeTags`](#adobetags), [`AdobeAnalytics`](#adobeanalytics), [`AdobeWebSdk`](#adobewebsdk)
 - [Conversion Tags (CV) of the Ads](#conversion-tags): [`GoogleAds`](#googleads), [`Floodlight`](#floodlight), [`MerchantCenter`](#merchantcenter), [`MetaPixel`](#metapixel), [`TikTokPixel`](#tiktokpixel), [`XPixel`](#xpixel), [`LineTag`](#linetag), [`YahooJapanAds`](#yahoojapanads), [`MicrosoftAds`](#microsoftads)
-- [Embedded Contents](#embeds): [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
+- [Embedded Contents](#embeds): [`GoogleFonts`](#googlefonts), [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
 
 ## Tag Managers and Analytics {#tag-managers-and-analytics}
 
@@ -259,6 +259,17 @@ From the base code of Microsoft. **Checked every week.**
 | `connect-src` | `https://bat.bing.com` `https://bat.bing.net` |
 
 ## Embedded Contents {#embeds}
+
+### `GoogleFonts` {#googlefonts}
+
+The fonts of Google Fonts: the stylesheet of `fonts.googleapis.com` (the `<link>` of the embed code, or `@import`) and the font files of `fonts.gstatic.com`.
+
+From the embed code. **Checked every week.**
+
+| Directive | Sources |
+| --- | --- |
+| `style-src` | `https://fonts.googleapis.com` |
+| `font-src` | `https://fonts.gstatic.com` |
 
 ### `GoogleMaps` {#googlemaps}
 

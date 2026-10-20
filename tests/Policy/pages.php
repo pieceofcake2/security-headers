@@ -6,6 +6,7 @@
 
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Facebook;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAnalytics;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleFonts;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleMaps;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleMapsEmbed;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
@@ -58,6 +59,22 @@ HTML,
 <iframe width="320" height="240" src="https://www.google.com/maps?q=Tokyo+Tower&output=embed"></iframe>
 HTML,
         'loads' => ['https://www.google.com/maps'],
+    ],
+    'google-fonts' => [
+        'allow' => [GoogleFonts::class],
+        'html' => <<<'HTML'
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
+<p id="google-fonts">日本語のフォント</p>
+<script nonce="{nonce}">window.addEventListener('load', function () {
+  document.getElementById('google-fonts').style.fontFamily = "'Noto Sans JP'";
+  document.fonts.load("16px 'Noto Sans JP'", '日本語のフォント');
+});</script>
+HTML,
+        // Chrome has no resource timing for the font files of fonts.gstatic.com: document.fonts.load() loads them,
+        // and a font-src that blocks them is a violation
+        'loads' => ['https://fonts.googleapis.com/css2'],
     ],
     'youtube' => [
         'allow' => [YouTube::class],
