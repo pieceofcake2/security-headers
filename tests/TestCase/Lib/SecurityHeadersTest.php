@@ -1,6 +1,7 @@
 <?php
 
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\MetaPixel;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\NeedsNonce;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
@@ -188,9 +189,18 @@ class SecurityHeadersTest extends CakeTestCase
         foreach ($classes as $class) {
             $policy = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [$class]]), true)['Content-Security-Policy-Report-Only'];
 
-            $this->assertStringStartsWith("default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'; ", $policy, $class);
+            // The presets add sources, but keep 'self' and never loosen frame-ancestors, base-uri or object-src
+            $this->assertMatchesRegularExpression("/^default-src 'self'; frame-ancestors 'self'; form-action 'self'[^;]*; base-uri 'self'; object-src 'none'; /", $policy, $class);
             $this->assertStringNotContainsString('script-src-elem', $policy, $class);
         }
+    }
+
+    public function testMetaPixelAllowsItsFormInAFrame(): void
+    {
+        $policy = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [MetaPixel::class]]), true)['Content-Security-Policy-Report-Only'];
+
+        $this->assertStringContainsString("form-action 'self' https://www.facebook.com;", $policy);
+        $this->assertStringContainsString("frame-src 'self' https://www.facebook.com", $policy);
     }
 
     public function testNotAClassOfSources(): void

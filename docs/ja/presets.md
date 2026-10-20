@@ -217,6 +217,10 @@ Meta ピクセル (Facebook ピクセル)。Facebook と Instagram の広告。*
 | `script-src` | `https://connect.facebook.net` |
 | `img-src` | `https://www.facebook.com` |
 | `connect-src` | `https://www.facebook.com` |
+| `frame-src` | `https://www.facebook.com` |
+| `form-action` | `https://www.facebook.com` |
+
+大きいイベントは、隠したフレームの中のフォームで `https://www.facebook.com/tr/` に送るため、`frame-src` と `form-action` も許可します。
 
 <a id="tiktokpixel"></a>
 

@@ -191,6 +191,10 @@ From [the base code of Meta](https://developers.facebook.com/docs/meta-pixel/get
 | `script-src` | `https://connect.facebook.net` |
 | `img-src` | `https://www.facebook.com` |
 | `connect-src` | `https://www.facebook.com` |
+| `frame-src` | `https://www.facebook.com` |
+| `form-action` | `https://www.facebook.com` |
+
+Large events are posted with a form in a hidden frame to `https://www.facebook.com/tr/`, hence `frame-src` and `form-action`.
 
 ### `TikTokPixel` {#tiktokpixel}
 
