@@ -27,7 +27,7 @@ Configure::write('SecurityHeaders', [
 
 - [タグマネージャーとアクセス解析](#tag-managers-and-analytics): [`GoogleTagManager`](#googletagmanager), [`GoogleTagManagerPreview`](#googletagmanagerpreview), [`GoogleAnalytics`](#googleanalytics), [`GoogleAnalyticsWithAds`](#googleanalyticswithads), [`AdobeTags`](#adobetags), [`AdobeAnalytics`](#adobeanalytics), [`AdobeWebSdk`](#adobewebsdk)
 - [広告のコンバージョン (CV) タグ](#conversion-tags): [`GoogleAds`](#googleads), [`Floodlight`](#floodlight), [`MerchantCenter`](#merchantcenter), [`MetaPixel`](#metapixel), [`TikTokPixel`](#tiktokpixel), [`XPixel`](#xpixel), [`LineTag`](#linetag), [`YahooJapanAds`](#yahoojapanads), [`MicrosoftAds`](#microsoftads)
-- [埋め込み](#embeds): [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
+- [埋め込み](#embeds): [`GoogleFonts`](#googlefonts), [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
 
 <a id="tag-managers-and-analytics"></a>
 
@@ -297,6 +297,19 @@ Microsoft 広告の UET タグ。**nonce をオンにします**。コードに�
 <a id="embeds"></a>
 
 ## 埋め込み
+
+<a id="googlefonts"></a>
+
+### `GoogleFonts`
+
+Google Fonts のフォント。`fonts.googleapis.com` のスタイルシート (埋め込みコードの `<link>`、または `@import`) と、`fonts.gstatic.com` のフォントのファイル。
+
+根拠: 埋め込みコード。**毎週確認。**
+
+| ディレクティブ | ソース |
+| --- | --- |
+| `style-src` | `https://fonts.googleapis.com` |
+| `font-src` | `https://fonts.gstatic.com` |
 
 <a id="googlemaps"></a>
 

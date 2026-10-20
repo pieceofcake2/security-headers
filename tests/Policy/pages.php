@@ -6,6 +6,7 @@
 
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Facebook;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAnalytics;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleFonts;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleMaps;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleMapsEmbed;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
@@ -58,6 +59,17 @@ HTML,
 <iframe width="320" height="240" src="https://www.google.com/maps?q=Tokyo+Tower&output=embed"></iframe>
 HTML,
         'loads' => ['https://www.google.com/maps'],
+    ],
+    'google-fonts' => [
+        'allow' => [GoogleFonts::class],
+        'html' => <<<'HTML'
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
+<p id="google-fonts">日本語のフォント</p>
+<script nonce="{nonce}">document.getElementById('google-fonts').style.fontFamily = "'Noto Sans JP'";</script>
+HTML,
+        'loads' => ['https://fonts.googleapis.com/css2', 'https://fonts.gstatic.com/'],
     ],
     'youtube' => [
         'allow' => [YouTube::class],
