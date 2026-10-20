@@ -67,9 +67,14 @@ HTML,
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap">
 <p id="google-fonts">日本語のフォント</p>
-<script nonce="{nonce}">document.getElementById('google-fonts').style.fontFamily = "'Noto Sans JP'";</script>
+<script nonce="{nonce}">window.addEventListener('load', function () {
+  document.getElementById('google-fonts').style.fontFamily = "'Noto Sans JP'";
+  document.fonts.load("16px 'Noto Sans JP'", '日本語のフォント');
+});</script>
 HTML,
-        'loads' => ['https://fonts.googleapis.com/css2', 'https://fonts.gstatic.com/'],
+        // Chrome has no resource timing for the font files of fonts.gstatic.com: document.fonts.load() loads them,
+        // and a font-src that blocks them is a violation
+        'loads' => ['https://fonts.googleapis.com/css2'],
     ],
     'youtube' => [
         'allow' => [YouTube::class],
