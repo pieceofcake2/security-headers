@@ -6,7 +6,8 @@ namespace PieceOfCake2\SecurityHeaders\ContentSecurityPolicy;
 /**
  * The Meta Pixel (Facebook Pixel): its script of connect.facebook.net and its events sent to www.facebook.com, from
  * the base code of https://developers.facebook.com/docs/meta-pixel/get-started. Large events are posted with a form
- * in a hidden frame to www.facebook.com/tr/
+ * in a hidden frame to www.facebook.com/tr/, and the errors of the pixel are logged with an image of
+ * connect.facebook.net/log/error
  */
 class MetaPixel implements NeedsNonce
 {
@@ -17,7 +18,7 @@ class MetaPixel implements NeedsNonce
     {
         return [
             'script-src' => ['https://connect.facebook.net'],
-            'img-src' => ['https://www.facebook.com'],
+            'img-src' => ['https://www.facebook.com', 'https://connect.facebook.net'],
             'connect-src' => ['https://www.facebook.com'],
             'frame-src' => ['https://www.facebook.com'],
             'form-action' => ['https://www.facebook.com'],

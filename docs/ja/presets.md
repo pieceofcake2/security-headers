@@ -215,12 +215,12 @@ Meta ピクセル (Facebook ピクセル)。Facebook と Instagram の広告。*
 | ディレクティブ | ソース |
 | --- | --- |
 | `script-src` | `https://connect.facebook.net` |
-| `img-src` | `https://www.facebook.com` |
+| `img-src` | `https://www.facebook.com` `https://connect.facebook.net` |
 | `connect-src` | `https://www.facebook.com` |
 | `frame-src` | `https://www.facebook.com` |
 | `form-action` | `https://www.facebook.com` |
 
-大きいイベントは、隠したフレームの中のフォームで `https://www.facebook.com/tr/` に送るため、`frame-src` と `form-action` も許可します。
+大きいイベントは、隠したフレームの中のフォームで `https://www.facebook.com/tr/` に送るため、`frame-src` と `form-action` も許可します。ピクセルは、自分のエラーを `https://connect.facebook.net/log/error` の画像で送るため、`img-src` に `connect.facebook.net` も許可します。
 
 <a id="tiktokpixel"></a>
 
