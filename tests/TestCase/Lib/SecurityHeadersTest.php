@@ -201,6 +201,7 @@ class SecurityHeadersTest extends CakeTestCase
 
         $this->assertStringContainsString("form-action 'self' https://www.facebook.com;", $policy);
         $this->assertStringContainsString("frame-src 'self' https://www.facebook.com", $policy);
+        $this->assertStringContainsString("img-src 'self' https://www.facebook.com https://connect.facebook.net;", $policy);
     }
 
     public function testNotAClassOfSources(): void

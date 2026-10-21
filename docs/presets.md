@@ -189,12 +189,12 @@ From [the base code of Meta](https://developers.facebook.com/docs/meta-pixel/get
 | Directive | Sources |
 | --- | --- |
 | `script-src` | `https://connect.facebook.net` |
-| `img-src` | `https://www.facebook.com` |
+| `img-src` | `https://www.facebook.com` `https://connect.facebook.net` |
 | `connect-src` | `https://www.facebook.com` |
 | `frame-src` | `https://www.facebook.com` |
 | `form-action` | `https://www.facebook.com` |
 
-Large events are posted with a form in a hidden frame to `https://www.facebook.com/tr/`, hence `frame-src` and `form-action`.
+Large events are posted with a form in a hidden frame to `https://www.facebook.com/tr/`, hence `frame-src` and `form-action`. The pixel logs its errors with an image of `https://connect.facebook.net/log/error`, hence `connect.facebook.net` in `img-src`.
 
 ### `TikTokPixel` {#tiktokpixel}
 

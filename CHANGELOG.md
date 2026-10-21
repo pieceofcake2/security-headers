@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased
+
+- `MetaPixel` allows `https://connect.facebook.net` in `img-src`: the pixel logs its errors with an image of
+  `https://connect.facebook.net/log/error`, which the policy blocked
+
 ## 1.0.6
 
 - New class of `contentSecurityPolicyAllow`: `GoogleFonts` (the stylesheets of `fonts.googleapis.com` and the font
