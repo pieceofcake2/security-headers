@@ -27,7 +27,7 @@ Configure::write('SecurityHeaders', [
 
 - [Tag Managers and Analytics](#tag-managers-and-analytics): [`GoogleTagManager`](#googletagmanager), [`GoogleTagManagerPreview`](#googletagmanagerpreview), [`GoogleAnalytics`](#googleanalytics), [`GoogleAnalyticsWithAds`](#googleanalyticswithads), [`AdobeTags`](#adobetags), [`AdobeAnalytics`](#adobeanalytics), [`AdobeWebSdk`](#adobewebsdk)
 - [Conversion Tags (CV) of the Ads](#conversion-tags): [`GoogleAds`](#googleads), [`Floodlight`](#floodlight), [`MerchantCenter`](#merchantcenter), [`MetaPixel`](#metapixel), [`TikTokPixel`](#tiktokpixel), [`XPixel`](#xpixel), [`LineTag`](#linetag), [`YahooJapanAds`](#yahoojapanads), [`MicrosoftAds`](#microsoftads)
-- [Embedded Contents](#embeds): [`GoogleFonts`](#googlefonts), [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
+- [Embedded Contents](#embeds): [`GoogleFonts`](#googlefonts), [`GoogleTranslate`](#googletranslate), [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
 
 ## Tag Managers and Analytics {#tag-managers-and-analytics}
 
@@ -270,6 +270,22 @@ From the embed code. **Checked every week.**
 | --- | --- |
 | `style-src` | `https://fonts.googleapis.com` |
 | `font-src` | `https://fonts.gstatic.com` |
+
+### `GoogleTranslate` {#googletranslate}
+
+Google Translate: the Translate Element library (`te_lib`) of the website widget (`https://translate.google.com/translate_a/element.js`). Chrome on iOS loads the same library into the page when the user translates it, so its requests are checked by the policy of the page too.
+
+Google publishes no policy for it: the sources are the files that the library loads, seen in the reports of the browsers and in a headless Chrome. **Checked every week.**
+
+| Directive | Sources |
+| --- | --- |
+| `script-src` | `https://translate.google.com` `https://translate.googleapis.com` `https://translate-pa.googleapis.com` |
+| `style-src` | `https://www.gstatic.com/_/translate_http/` |
+| `style-src-attr` | `'unsafe-inline'` |
+| `img-src` | `https://translate.google.com` `https://translate.googleapis.com/translate_static/` `https://www.gstatic.com` `https://www.google.com/images/` `https://fonts.gstatic.com/s/i/productlogos/translate/` |
+| `connect-src` | `https://translate.googleapis.com` `https://translate-pa.googleapis.com` |
+
+The translated text has `style` attributes, so it adds `'unsafe-inline'` to `style-src-attr` only: `<style>` elements stay blocked, and scripts are not affected. `translate-pa.googleapis.com` answers the list of the languages as a script (JSONP). `translate.google.com/gen204` logs the translation with an image.
 
 ### `GoogleMaps` {#googlemaps}
 

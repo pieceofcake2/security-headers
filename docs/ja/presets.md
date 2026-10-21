@@ -27,7 +27,7 @@ Configure::write('SecurityHeaders', [
 
 - [タグマネージャーとアクセス解析](#tag-managers-and-analytics): [`GoogleTagManager`](#googletagmanager), [`GoogleTagManagerPreview`](#googletagmanagerpreview), [`GoogleAnalytics`](#googleanalytics), [`GoogleAnalyticsWithAds`](#googleanalyticswithads), [`AdobeTags`](#adobetags), [`AdobeAnalytics`](#adobeanalytics), [`AdobeWebSdk`](#adobewebsdk)
 - [広告のコンバージョン (CV) タグ](#conversion-tags): [`GoogleAds`](#googleads), [`Floodlight`](#floodlight), [`MerchantCenter`](#merchantcenter), [`MetaPixel`](#metapixel), [`TikTokPixel`](#tiktokpixel), [`XPixel`](#xpixel), [`LineTag`](#linetag), [`YahooJapanAds`](#yahoojapanads), [`MicrosoftAds`](#microsoftads)
-- [埋め込み](#embeds): [`GoogleFonts`](#googlefonts), [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
+- [埋め込み](#embeds): [`GoogleFonts`](#googlefonts), [`GoogleTranslate`](#googletranslate), [`GoogleMaps`](#googlemaps), [`GoogleMapsEmbed`](#googlemapsembed), [`YouTube`](#youtube), [`Facebook`](#facebook), [`Instagram`](#instagram), [`X`](#x), [`TikTok`](#tiktok), [`Line`](#line)
 
 <a id="tag-managers-and-analytics"></a>
 
@@ -310,6 +310,24 @@ Google Fonts のフォント。`fonts.googleapis.com` のスタイルシート (
 | --- | --- |
 | `style-src` | `https://fonts.googleapis.com` |
 | `font-src` | `https://fonts.gstatic.com` |
+
+<a id="googletranslate"></a>
+
+### `GoogleTranslate`
+
+Google 翻訳。ウェブサイトのウィジェット (`https://translate.google.com/translate_a/element.js`) の Translate Element のライブラリ (`te_lib`)。iOS の Chrome は、ページを翻訳するときに同じライブラリをページに読み込むため、その読み込みもページのポリシーで確かめられます。
+
+Google はこのポリシーを公開していません。ソースは、ブラウザーの違反の報告とヘッドレスの Chrome で確かめた、ライブラリが読み込むファイルです。**毎週確認。**
+
+| ディレクティブ | ソース |
+| --- | --- |
+| `script-src` | `https://translate.google.com` `https://translate.googleapis.com` `https://translate-pa.googleapis.com` |
+| `style-src` | `https://www.gstatic.com/_/translate_http/` |
+| `style-src-attr` | `'unsafe-inline'` |
+| `img-src` | `https://translate.google.com` `https://translate.googleapis.com/translate_static/` `https://www.gstatic.com` `https://www.google.com/images/` `https://fonts.gstatic.com/s/i/productlogos/translate/` |
+| `connect-src` | `https://translate.googleapis.com` `https://translate-pa.googleapis.com` |
+
+翻訳した文字に `style` 属性が付くため、`style-src-attr` にだけ `'unsafe-inline'` を追加します。`<style>` 要素は止めたままで、スクリプトには影響しません。`translate-pa.googleapis.com` は、言語の一覧をスクリプト (JSONP) で返します。`translate.google.com/gen204` は、翻訳を画像で記録します。
 
 <a id="googlemaps"></a>
 

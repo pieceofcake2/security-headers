@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Unreleased
+
+- New class of `contentSecurityPolicyAllow`: `GoogleTranslate` (the Translate Element library of Google Translate, of
+  the website widget and of the translation of pages in Chrome on iOS)
+
 ## 1.0.7
 
 - `MetaPixel` allows `https://connect.facebook.net` in `img-src`: the pixel logs its errors with an image of
