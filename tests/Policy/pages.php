@@ -10,6 +10,7 @@ use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleFonts;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleMaps;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleMapsEmbed;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTranslate;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Instagram;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Line;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\LineTag;
@@ -75,6 +76,18 @@ HTML,
         // Chrome has no resource timing for the font files of fonts.gstatic.com: document.fonts.load() loads them,
         // and a font-src that blocks them is a violation
         'loads' => ['https://fonts.googleapis.com/css2'],
+    ],
+    'google-translate' => [
+        'allow' => [GoogleTranslate::class],
+        'html' => <<<'HTML'
+<p>翻訳するページ</p>
+<div id="google_translate_element"></div>
+<script nonce="{nonce}">function googleTranslateElementInit() {
+  new google.translate.TranslateElement({pageLanguage: 'ja'}, 'google_translate_element');
+}</script>
+<script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+HTML,
+        'loads' => ['https://translate.google.com/translate_a/element.js', 'https://translate.googleapis.com/', 'https://www.gstatic.com/_/translate_http/'],
     ],
     'youtube' => [
         'allow' => [YouTube::class],

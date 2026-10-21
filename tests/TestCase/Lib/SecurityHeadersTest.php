@@ -1,5 +1,6 @@
 <?php
 
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAnalytics;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\MetaPixel;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\NeedsNonce;
@@ -180,12 +181,29 @@ class SecurityHeadersTest extends CakeTestCase
         );
     }
 
+    public function testSourcesOfSeveralClassesAreUnique(): void
+    {
+        $policy = SecurityHeaders::headers(SecurityHeaders::settings([
+            'contentSecurityPolicyAllow' => [
+                GoogleTagManager::class,
+                GoogleAnalytics::class,
+                'same' => ['script-src' => ['https://www.googletagmanager.com', "'self'"]],
+            ],
+        ]), true)['Content-Security-Policy-Report-Only'];
+
+        $this->assertSame(1, substr_count($policy, 'script-src '));
+        $this->assertSame(1, preg_match_all('#script-src [^;]*https://www\.googletagmanager\.com#', $policy));
+        preg_match('#script-src ([^;]*)#', $policy, $matches);
+        $sources = explode(' ', $matches[1]);
+        $this->assertSame(array_values(array_unique($sources)), $sources);
+    }
+
     public function testEveryClassOfThePlugin(): void
     {
         $classes = array_map(static fn(string $file): string => 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . basename($file, '.php'), glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: []);
         $classes = array_values(array_filter($classes, [self::class, 'isPreset']));
 
-        $this->assertCount(25, $classes);
+        $this->assertCount(26, $classes);
         foreach ($classes as $class) {
             $policy = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [$class]]), true)['Content-Security-Policy-Report-Only'];
 
