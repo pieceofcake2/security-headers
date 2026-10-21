@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.0.8
 
 - New class of `contentSecurityPolicyAllow`: `GoogleTranslate` (the Translate Element library of Google Translate, of
   the website widget and of the translation of pages in Chrome on iOS)
