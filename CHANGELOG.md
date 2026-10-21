@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.0.7
 
 - `MetaPixel` allows `https://connect.facebook.net` in `img-src`: the pixel logs its errors with an image of
   `https://connect.facebook.net/log/error`, which the policy blocked
