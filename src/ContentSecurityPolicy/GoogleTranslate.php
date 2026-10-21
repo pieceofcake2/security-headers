@@ -22,7 +22,7 @@ class GoogleTranslate implements Sources
             'script-src' => ['https://translate.google.com', 'https://translate.googleapis.com', 'https://translate-pa.googleapis.com'],
             'style-src' => ['https://www.gstatic.com/_/translate_http/'],
             'style-src-attr' => ["'unsafe-inline'"],
-            'img-src' => ['https://translate.google.com', 'https://www.gstatic.com', 'https://fonts.gstatic.com/s/i/productlogos/translate/'],
+            'img-src' => ['https://translate.google.com', 'https://translate.googleapis.com/translate_static/', 'https://www.gstatic.com', 'https://www.google.com/images/', 'https://fonts.gstatic.com/s/i/productlogos/translate/'],
             'connect-src' => ['https://translate.googleapis.com', 'https://translate-pa.googleapis.com'],
         ];
     }

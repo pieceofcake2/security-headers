@@ -324,7 +324,7 @@ Google はこのポリシーを公開していません。ソースは、ブラ�
 | `script-src` | `https://translate.google.com` `https://translate.googleapis.com` `https://translate-pa.googleapis.com` |
 | `style-src` | `https://www.gstatic.com/_/translate_http/` |
 | `style-src-attr` | `'unsafe-inline'` |
-| `img-src` | `https://translate.google.com` `https://www.gstatic.com` `https://fonts.gstatic.com/s/i/productlogos/translate/` |
+| `img-src` | `https://translate.google.com` `https://translate.googleapis.com/translate_static/` `https://www.gstatic.com` `https://www.google.com/images/` `https://fonts.gstatic.com/s/i/productlogos/translate/` |
 | `connect-src` | `https://translate.googleapis.com` `https://translate-pa.googleapis.com` |
 
 翻訳した文字に `style` 属性が付くため、`style-src-attr` にだけ `'unsafe-inline'` を追加します。`<style>` 要素は止めたままで、スクリプトには影響しません。`translate-pa.googleapis.com` は、言語の一覧をスクリプト (JSONP) で返します。`translate.google.com/gen204` は、翻訳を画像で記録します。

@@ -78,7 +78,8 @@ HTML,
         'loads' => ['https://fonts.googleapis.com/css2'],
     ],
     'google-translate' => [
-        'allow' => [GoogleTranslate::class],
+        // The library logs with the scheme of the page: http:// on the server of the check, https:// on a site
+        'allow' => [GoogleTranslate::class, 'http-of-the-check' => ['img-src' => ['http://translate.google.com']]],
         'html' => <<<'HTML'
 <p>翻訳するページ</p>
 <div id="google_translate_element"></div>

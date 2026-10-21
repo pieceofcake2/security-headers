@@ -282,7 +282,7 @@ Google publishes no policy for it: the sources are the files that the library lo
 | `script-src` | `https://translate.google.com` `https://translate.googleapis.com` `https://translate-pa.googleapis.com` |
 | `style-src` | `https://www.gstatic.com/_/translate_http/` |
 | `style-src-attr` | `'unsafe-inline'` |
-| `img-src` | `https://translate.google.com` `https://www.gstatic.com` `https://fonts.gstatic.com/s/i/productlogos/translate/` |
+| `img-src` | `https://translate.google.com` `https://translate.googleapis.com/translate_static/` `https://www.gstatic.com` `https://www.google.com/images/` `https://fonts.gstatic.com/s/i/productlogos/translate/` |
 | `connect-src` | `https://translate.googleapis.com` `https://translate-pa.googleapis.com` |
 
 The translated text has `style` attributes, so it adds `'unsafe-inline'` to `style-src-attr` only: `<style>` elements stay blocked, and scripts are not affected. `translate-pa.googleapis.com` answers the list of the languages as a script (JSONP). `translate.google.com/gen204` logs the translation with an image.
