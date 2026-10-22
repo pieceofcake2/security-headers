@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- New setting `contentSecurityPolicyStrictDynamic`: adds `'strict-dynamic'` to `script-src` and replaces its hosts
+  with `https:`, for the browsers without it. The scripts that the scripts of the nonce load are allowed from any
+  host, and every `<script>` element of the HTML needs the nonce. It turns on the nonce
 - New helper `SecurityHeadersHtmlHelper`, an `HtmlHelper` that gives the nonce to the scripts of `script()`,
   `scriptBlock()` and `scriptStart()`: `'Html' => ['className' => 'SecurityHeaders.SecurityHeadersHtml']`
 - Composer loads the classes of the plugin (`Controller/`, `Lib/`, `Routing/` and `View/` in the classmap), which no

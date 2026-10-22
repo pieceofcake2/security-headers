@@ -48,6 +48,9 @@ class SecurityHeaders
         // A nonce of each request added to script-src, for the inline scripts: see nonce(). By default (null), on
         // when a class of contentSecurityPolicyAllow needs it (NeedsNonce)
         'contentSecurityPolicyNonce' => null,
+        // 'strict-dynamic' in script-src: the scripts that the scripts of the nonce load are allowed, and the hosts of
+        // script-src are replaced with https: for the browsers without 'strict-dynamic'. Turns on the nonce
+        'contentSecurityPolicyStrictDynamic' => false,
         // The browsers report the violations without blocking them: adapt the policy to the application first
         'contentSecurityPolicyReportOnly' => true,
         'reportUri' => false,
@@ -117,12 +120,15 @@ class SecurityHeaders
                 'contentSecurityPolicy' => is_string($value) || is_array($value) || $value === false || $value === null,
                 'contentSecurityPolicyAllow' => is_array($value),
                 'contentSecurityPolicyNonce' => is_bool($value) || $value === null,
-                'contentSecurityPolicyReportOnly', 'removePoweredBy' => is_bool($value),
+                'contentSecurityPolicyReportOnly', 'contentSecurityPolicyStrictDynamic', 'removePoweredBy' => is_bool($value),
                 default => is_string($value) || $value === false || $value === null,
             };
             if (!$valid) {
                 throw new InvalidArgumentException(sprintf('Invalid value of SecurityHeaders.%s: %s', $key, get_debug_type($value)));
             }
+        }
+        if (($settings['contentSecurityPolicyStrictDynamic'] ?? false) === true && ($settings['contentSecurityPolicyNonce'] ?? null) === false) {
+            throw new InvalidArgumentException('SecurityHeaders.contentSecurityPolicyStrictDynamic needs the nonce: contentSecurityPolicyNonce is false');
         }
         $policy = $settings['contentSecurityPolicy'] ?? null;
         if (is_string($policy) || is_array($policy)) {
@@ -176,12 +182,22 @@ class SecurityHeaders
                     $directives = self::addSources($directives, $sources);
                 }
                 if ($nonce !== null && self::usesNonce($settings)) {
+                    $strictDynamic = !empty($settings['contentSecurityPolicyStrictDynamic']);
+                    $added = ["'nonce-" . $nonce . "'"];
+                    if ($strictDynamic) {
+                        $added = [...$added, "'strict-dynamic'", 'https:'];
+                    }
                     // script-src-elem replaces script-src for the <script> elements
-                    $nonced = ['script-src' => "'nonce-" . $nonce . "'"];
+                    $nonced = ['script-src' => $added];
                     if (isset($directives['script-src-elem'])) {
-                        $nonced['script-src-elem'] = $nonced['script-src'];
+                        $nonced['script-src-elem'] = $added;
                     }
                     $directives = self::addSources($directives, $nonced);
+                    if ($strictDynamic) {
+                        foreach (array_keys($nonced) as $directive) {
+                            $directives[$directive] = self::withoutHosts($directives[$directive]);
+                        }
+                    }
                 }
                 if (is_string($settings['reportUri'] ?? null) && $settings['reportUri'] !== '') {
                     $directives['report-uri'] = [$settings['reportUri']];
@@ -198,8 +214,8 @@ class SecurityHeaders
     }
 
     /**
-     * Whether the policy has a nonce: `contentSecurityPolicyNonce`, or by default whether a class of
-     * `contentSecurityPolicyAllow` needs it
+     * Whether the policy has a nonce: on with `contentSecurityPolicyStrictDynamic`, else `contentSecurityPolicyNonce`,
+     * or by default whether a class of `contentSecurityPolicyAllow` needs it
      *
      * @param array<string, mixed> $settings Settings of `settings()`
      * @return bool
@@ -207,6 +223,9 @@ class SecurityHeaders
     public static function usesNonce(array $settings): bool
     {
         $nonce = $settings['contentSecurityPolicyNonce'] ?? null;
+        if (!empty($settings['contentSecurityPolicyStrictDynamic'])) {
+            return true;
+        }
         if (is_bool($nonce)) {
             return $nonce;
         }
@@ -314,6 +333,21 @@ class SecurityHeaders
         }
 
         return $directives;
+    }
+
+    /**
+     * The sources without the hosts, e.g. `https://www.googletagmanager.com`, which the browsers ignore with
+     * `'strict-dynamic'`: the keywords, nonces, hashes and schemes, e.g. `https:`, stay
+     *
+     * @param array<string> $sources Sources of a directive
+     * @return array<string>
+     */
+    private static function withoutHosts(array $sources): array
+    {
+        return array_values(array_filter(
+            $sources,
+            static fn(string $source): bool => str_starts_with($source, "'") || preg_match('/^[a-z][a-z0-9+.-]*:$/i', $source) === 1,
+        ));
     }
 
     /**

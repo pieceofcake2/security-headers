@@ -289,6 +289,45 @@ class SecurityHeadersTest extends CakeTestCase
         $this->assertStringNotContainsString('nonce', SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy']);
     }
 
+    /**
+     * With 'strict-dynamic', script-src has the nonce, 'strict-dynamic' and https: instead of the hosts
+     *
+     * @return void
+     */
+    public function testStrictDynamic(): void
+    {
+        $settings = SecurityHeaders::settings([
+            'contentSecurityPolicy' => ['default-src' => ["'self'"], 'img-src' => ["'self'"]],
+            'contentSecurityPolicyAllow' => [
+                new GoogleTagManager(),
+                'cdn' => ['script-src' => ['https://cdn.example.com', "'sha256-abc='"], 'script-src-elem' => ['https://cdn.example.com']],
+            ],
+            'contentSecurityPolicyReportOnly' => false,
+            'contentSecurityPolicyStrictDynamic' => true,
+        ]);
+
+        $this->assertTrue(SecurityHeaders::usesNonce($settings));
+        $this->assertSame(
+            "default-src 'self'; img-src 'self' https://www.googletagmanager.com; script-src 'self' 'sha256-abc=' 'nonce-abc' 'strict-dynamic' https:; "
+            . "connect-src 'self' https://www.googletagmanager.com https://www.google.com; script-src-elem 'self' 'sha256-abc=' 'nonce-abc' 'strict-dynamic' https:",
+            SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy'],
+        );
+    }
+
+    /**
+     * 'strict-dynamic' without the nonce would block every script: the settings throw
+     *
+     * @return void
+     */
+    public function testStrictDynamicNeedsTheNonce(): void
+    {
+        $this->assertTrue(SecurityHeaders::usesNonce(SecurityHeaders::settings(['contentSecurityPolicyStrictDynamic' => true])));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('SecurityHeaders.contentSecurityPolicyStrictDynamic needs the nonce: contentSecurityPolicyNonce is false');
+        SecurityHeaders::settings(['contentSecurityPolicyStrictDynamic' => true, 'contentSecurityPolicyNonce' => false]);
+    }
+
     public function testNewNonce(): void
     {
         $nonce = SecurityHeaders::nonce();
@@ -360,6 +399,7 @@ class SecurityHeadersTest extends CakeTestCase
             ['xFrameOptions', ['DENY'], 'array'],
             ['strictTransportSecurity', 31536000, 'int'],
             ['contentSecurityPolicyNonce', 1, 'int'],
+            ['contentSecurityPolicyStrictDynamic', null, 'null'],
             ['contentSecurityPolicyReportOnly', 'false', 'string'],
             ['contentSecurityPolicyAllow', 'cdn', 'string'],
             ['contentSecurityPolicy', true, 'bool'],

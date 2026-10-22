@@ -12,6 +12,7 @@ off by default. The Content Security Policy is sent in report-only mode by defau
 - [Settings](#settings)
 - [Allowing Other Sites](#allowing-other-sites)
 - [Inline Scripts and the Nonce](#inline-scripts-and-the-nonce)
+- [Scripts Loaded by Scripts ('strict-dynamic')](#strict-dynamic)
 - [Headers for the Web Server or the CDN](#headers-for-the-web-server-or-the-cdn)
 - [Enforcing the Content Security Policy](#enforcing-the-content-security-policy)
 - [Changing the Headers in an Action](#changing-the-headers-in-an-action)
@@ -79,6 +80,7 @@ On by default:
 | `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | The sources of the scripts, styles, images, frames and forms of the page. It is the main defense against XSS. An array of the directives and their sources, or the policy as a string. |
 | `contentSecurityPolicyAllow` | | `[]` | The other sites allowed by the policy: the instances of the classes of the services, e.g. `new GoogleTagManager()`, and the sources by directive with a name. See [Allowing Other Sites](#allowing-other-sites). |
 | `contentSecurityPolicyNonce` | | `null` | Adds a new nonce of each request to `script-src`, for the inline scripts that have it in their `nonce` attribute. By default (`null`), on when a preset of `contentSecurityPolicyAllow` needs it; `true` always, `false` never. See [Inline Scripts and the Nonce](#inline-scripts-and-the-nonce). |
+| `contentSecurityPolicyStrictDynamic` | | `false` | Adds `'strict-dynamic'` to `script-src`, and replaces its hosts with `https:`. Turns on the nonce. See [Scripts Loaded by Scripts ('strict-dynamic')](#strict-dynamic). |
 | `contentSecurityPolicyReportOnly` | | `true` | Sends the policy as `Content-Security-Policy-Report-Only`: the browsers report the violations in the console (and to `reportUri`) without blocking them. See [Enforcing the Content Security Policy](#enforcing-the-content-security-policy). |
 | `reportUri` | | `false` | A URL that receives the violation reports, added to the policy as `report-uri`. |
 | `xFrameOptions` | `X-Frame-Options` | `SAMEORIGIN` | Whether other sites can show the page in a frame (clickjacking). `frame-ancestors` of the policy replaces it in modern browsers; this one is for the old ones. |
@@ -244,6 +246,29 @@ add it to the scripts of an XSS too.
   the inline scripts of an XSS too. Add it to `contentSecurityPolicyAllow` only if you cannot add the nonce.
 - **Caches.** A nonce is new for each response. A page cached with its HTML, by `CacheHelper` or by a CDN, has the
   nonce of another response, so its inline scripts are blocked.
+
+<a id="strict-dynamic"></a>
+
+## Scripts Loaded by Scripts ('strict-dynamic')
+
+With `'contentSecurityPolicyStrictDynamic' => true`, `script-src` is the nonce, `'strict-dynamic'` and `https:`:
+
+```
+script-src 'self' 'nonce-…' 'strict-dynamic' https:
+```
+
+- **The scripts that a script of the nonce loads** with `document.createElement('script')`, e.g. the tags of Google
+  Tag Manager, the pixels and `import()`, are allowed from any host. The hosts of the presets in `script-src` are
+  not needed, and the plugin removes them. Their hosts in the other directives, e.g. `img-src` and `connect-src`,
+  stay.
+- **A host in `script-src` cannot be used to get around the policy**, e.g. with a JSONP endpoint of an allowed host.
+- **Every `<script>` element of the HTML needs the nonce**, including those with `src`: the browsers ignore the hosts
+  and `'self'`, so a `<script src>` without the nonce is blocked. So are the module scripts and the
+  `<link rel="modulepreload">` of a build tool, and the scripts written with `document.write()`.
+- **The browsers without `'strict-dynamic'`**, e.g. Safari before 15.4 (iOS 15.3 and earlier), ignore it and use
+  `https:`: they allow the scripts of any HTTPS site. Chrome and Firefox support it since version 52.
+
+The hashes, e.g. `'sha256-…'`, the keywords and the schemes of `script-src` stay.
 
 ## Headers for the Web Server or the CDN
 
