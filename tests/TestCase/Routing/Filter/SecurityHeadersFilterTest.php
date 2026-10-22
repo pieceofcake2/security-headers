@@ -2,14 +2,6 @@
 
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
 
-App::uses('CakeEvent', 'Event');
-App::uses('CakeRequest', 'Network');
-App::uses('CakeResponse', 'Network');
-App::uses('Dispatcher', 'Routing');
-App::uses('DispatcherFilter', 'Routing');
-App::uses('Router', 'Routing');
-App::uses('SecurityHeadersFilter', 'SecurityHeaders.Routing/Filter');
-
 /**
  * Answers every request, as `AssetDispatcher` does for the files of the plugins
  */

@@ -10,8 +10,6 @@ use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\NeedsNonce;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
-App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
-
 class SecurityHeadersTestWithArguments implements Sources
 {
     public function __construct(private string $host)

@@ -1,12 +1,5 @@
 <?php
 
-App::uses('ComponentCollection', 'Controller');
-App::uses('Controller', 'Controller');
-App::uses('CakeRequest', 'Network');
-App::uses('CakeResponse', 'Network');
-App::uses('SecurityHeadersComponent', 'SecurityHeaders.Controller/Component');
-App::uses('SecurityHeadersFilter', 'SecurityHeaders.Routing/Filter');
-
 class SecurityHeadersComponentTest extends CakeTestCase
 {
     /**
