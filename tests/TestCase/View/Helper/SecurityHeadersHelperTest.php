@@ -1,10 +1,5 @@
 <?php
 
-App::uses('CakeRequest', 'Network');
-App::uses('SecurityHeadersFilter', 'SecurityHeaders.Routing/Filter');
-App::uses('SecurityHeadersHelper', 'SecurityHeaders.View/Helper');
-App::uses('View', 'View');
-
 class SecurityHeadersHelperTest extends CakeTestCase
 {
     public function testNonce(): void

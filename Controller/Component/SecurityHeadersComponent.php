@@ -1,10 +1,6 @@
 <?php
 declare(strict_types=1);
 
-App::uses('Component', 'Controller');
-App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
-App::uses('SecurityHeadersFilter', 'SecurityHeaders.Routing/Filter');
-
 /**
  * Changes the security headers of `SecurityHeadersFilter` in an action:
  *

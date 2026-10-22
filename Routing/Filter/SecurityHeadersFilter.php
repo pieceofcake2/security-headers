@@ -1,10 +1,6 @@
 <?php
 declare(strict_types=1);
 
-App::uses('DispatcherFilter', 'Routing');
-App::uses('Router', 'Routing');
-App::uses('SecurityHeaders', 'SecurityHeaders.Lib');
-
 /**
  * Adds the security headers to every response of the application: the pages, the redirects, the downloads and the
  * files of the plugins and themes. It runs before the other filters, e.g. `AssetDispatcher`, and adds them to the
