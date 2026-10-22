@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.2.1
 
 - `contentSecurityPolicyStrictDynamic` adds `worker-src` with the sources of `script-src` before the change, when the
   policy has no `worker-src`: the workers used `script-src` with `https:` instead
