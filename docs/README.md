@@ -77,7 +77,7 @@ On by default:
 | Setting | Header | Default | What it does |
 | --- | --- | --- | --- |
 | `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | The sources of the scripts, styles, images, frames and forms of the page. It is the main defense against XSS. An array of the directives and their sources, or the policy as a string. |
-| `contentSecurityPolicyAllow` | | `[]` | The other sites allowed by the policy: the classes of the services, e.g. `GoogleTagManager::class`, and the sources by directive with a name. See [Allowing Other Sites](#allowing-other-sites). |
+| `contentSecurityPolicyAllow` | | `[]` | The other sites allowed by the policy: the instances of the classes of the services, e.g. `new GoogleTagManager()`, and the sources by directive with a name. See [Allowing Other Sites](#allowing-other-sites). |
 | `contentSecurityPolicyNonce` | | `null` | Adds a new nonce of each request to `script-src`, for the inline scripts that have it in their `nonce` attribute. By default (`null`), on when a preset of `contentSecurityPolicyAllow` needs it; `true` always, `false` never. See [Inline Scripts and the Nonce](#inline-scripts-and-the-nonce). |
 | `contentSecurityPolicyReportOnly` | | `true` | Sends the policy as `Content-Security-Policy-Report-Only`: the browsers report the violations in the console (and to `reportUri`) without blocking them. See [Enforcing the Content Security Policy](#enforcing-the-content-security-policy). |
 | `reportUri` | | `false` | A URL that receives the violation reports, added to the policy as `report-uri`. |
@@ -104,7 +104,7 @@ The plugin does not remove `Server`, which the web server sends: turn it off in 
 ## Allowing Other Sites
 
 To allow the scripts, images or frames of other sites, list them in `contentSecurityPolicyAllow`: the
-classes of the services, and the sources by directive with a name of your choice. The policy keeps
+instances of the classes of the services, and the sources by directive with a name of your choice. The policy keeps
 its other directives and sources:
 
 ```php
@@ -114,19 +114,23 @@ use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 Configure::write('SecurityHeaders', [
     'contentSecurityPolicyAllow' => [
-        GoogleTagManager::class,
-        GoogleAnalytics::class,
+        new GoogleTagManager(),
+        new GoogleAnalytics(),
         'cdn' => [
             'script-src' => ['https://cdn.example.com'],
         ],
-        YouTube::class,
+        new YouTube(),
     ],
 ]);
 ```
 
+The name of a class without arguments, e.g. `GoogleTagManager::class`, is accepted too. The instances take the
+options of a class, e.g. the countries of the users of `GoogleAnalyticsWithAds` and `GoogleAds`, for the domains of
+Google of their countries: `new GoogleAnalyticsWithAds(countries: ['jp'])` (see [Presets](presets.md#googleanalyticswithads)).
+
 A directive that the policy does not have starts from the sources of the one that the browsers use
 instead, as `default-src` for `script-src`, so that `'self'` stays allowed. `'none'` is removed when
-you add sources to a directive. With the default policy, `cdn` and `YouTube::class` above give:
+you add sources to a directive. With the default policy, `cdn` and `new YouTube()` above give:
 
 ```text
 default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none';

@@ -65,7 +65,7 @@ Configure::write('SecurityHeaders', [
     'permissionsPolicy' => 'camera=(), microphone=(), geolocation=(), payment=()',
     // Allows Google Tag Manager and the scripts of a CDN, in addition to those of the site
     'contentSecurityPolicyAllow' => [
-        GoogleTagManager::class,
+        new GoogleTagManager(),
         'cdn' => ['script-src' => ['https://cdn.example.com']],
     ],
 ]);

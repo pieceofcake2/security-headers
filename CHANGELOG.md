@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Unreleased
+
+- `contentSecurityPolicyAllow` takes instances of the classes, e.g. `new GoogleTagManager()`, which the docs now use.
+  The names of the classes without arguments, e.g. `GoogleTagManager::class`, are still accepted
+- `GoogleAnalyticsWithAds` and `GoogleAds` take the countries of the users, for the domains of Google of their
+  countries: `new GoogleAnalyticsWithAds(countries: ['jp'])` adds `https://*.google.co.jp` to `img-src` and
+  `connect-src`. `GoogleDomains` has the domains of Google by country, from https://www.google.com/supported_domains
+
 ## 1.0.8
 
 - New class of `contentSecurityPolicyAllow`: `GoogleTranslate` (the Translate Element library of Google Translate, of

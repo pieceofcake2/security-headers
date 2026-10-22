@@ -80,7 +80,7 @@ Configure::write('SecurityHeaders', [
 | 設定 | ヘッダー | デフォルト | 役割 |
 | --- | --- | --- | --- |
 | `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | ページのスクリプト、スタイル、画像、フレーム、フォームの送信先を制限します。XSS に対する主な防御です。ディレクティブとソースの配列か、ポリシーの文字列で書きます。 |
-| `contentSecurityPolicyAllow` | | `[]` | ポリシーで許可するほかのサイト。サービスのクラス (例: `GoogleTagManager::class`) か、名前を付けたディレクティブごとのソースを書きます。[ほかのサイトを許可する](#allowing-other-sites) を参照してください。 |
+| `contentSecurityPolicyAllow` | | `[]` | ポリシーで許可するほかのサイト。サービスのクラスのインスタンス (例: `new GoogleTagManager()`) か、名前を付けたディレクティブごとのソースを書きます。[ほかのサイトを許可する](#allowing-other-sites) を参照してください。 |
 | `contentSecurityPolicyNonce` | | `null` | リクエストごとに新しい nonce を `script-src` に追加します。`nonce` 属性にその値を持つインラインのスクリプトが許可されます。デフォルト (`null`) では、`contentSecurityPolicyAllow` のプリセットが必要とするときにオンです。`true` で常にオン、`false` でオフです。[インラインのスクリプトと nonce](#inline-scripts-and-the-nonce) を参照してください。 |
 | `contentSecurityPolicyReportOnly` | | `true` | ポリシーを `Content-Security-Policy-Report-Only` で送ります。ブラウザーは違反をブロックせず、コンソール (と `reportUri`) に報告します。[Content Security Policy を有効にする](#enforcing-the-content-security-policy) を参照してください。 |
 | `reportUri` | | `false` | 違反の報告を受け取る URL。ポリシーに `report-uri` として追加します。 |
@@ -109,7 +109,7 @@ Configure::write('SecurityHeaders', [
 ## ほかのサイトを許可する
 
 ほかのサイトのスクリプト、画像、フレームを許可するには、`contentSecurityPolicyAllow` に並べます。
-サービスのクラスか、自分で付けた名前とディレクティブごとのソースを書きます。ポリシーのほかの
+サービスのクラスのインスタンスか、自分で付けた名前とディレクティブごとのソースを書きます。ポリシーのほかの
 ディレクティブとソースはそのまま残ります。
 
 ```php
@@ -119,19 +119,23 @@ use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 Configure::write('SecurityHeaders', [
     'contentSecurityPolicyAllow' => [
-        GoogleTagManager::class,
-        GoogleAnalytics::class,
+        new GoogleTagManager(),
+        new GoogleAnalytics(),
         'cdn' => [
             'script-src' => ['https://cdn.example.com'],
         ],
-        YouTube::class,
+        new YouTube(),
     ],
 ]);
 ```
 
+引数の要らないクラスは、クラス名 (例: `GoogleTagManager::class`) でも書けます。インスタンスには、クラスの
+オプションを渡せます。たとえば `GoogleAnalyticsWithAds` と `GoogleAds` には、ユーザーの国の Google のドメインの
+ために、ユーザーの国を渡します: `new GoogleAnalyticsWithAds(countries: ['jp'])` ([プリセット](presets.md#googleanalyticswithads) を参照)。
+
 ポリシーにないディレクティブは、ブラウザーが代わりに使うディレクティブ (`script-src` なら `default-src`)
 のソースから始めるので、`'self'` は許可されたままです。ソースを追加したディレクティブからは `'none'`
-を取り除きます。デフォルトのポリシーに上の `cdn` と `YouTube::class` を追加すると、次のようになります。
+を取り除きます。デフォルトのポリシーに上の `cdn` と `new YouTube()` を追加すると、次のようになります。
 
 ```text
 default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none';

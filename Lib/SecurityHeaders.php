@@ -211,7 +211,7 @@ class SecurityHeaders
             return $nonce;
         }
         foreach ((array)($settings['contentSecurityPolicyAllow'] ?? []) as $name => $sources) {
-            if (is_int($name) && is_string($sources) && is_subclass_of($sources, NeedsNonce::class)) {
+            if (is_int($name) && ($sources instanceof NeedsNonce || (is_string($sources) && is_subclass_of($sources, NeedsNonce::class)))) {
                 return true;
             }
         }
@@ -222,8 +222,8 @@ class SecurityHeaders
     /**
      * The sources allowed in addition, by name
      *
-     * @param array<int|string, string|array<string, string|array<string>>> $allow Classes of
-     *   `ContentSecurityPolicy\Sources`, or arrays of sources by directive by name
+     * @param array<int|string, \PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Sources|string|array<string, string|array<string>>> $allow
+     *   Instances or classes of `ContentSecurityPolicy\Sources`, or arrays of sources by directive by name
      * @return array<string, array<string, string|array<string>>>
      * @throws \InvalidArgumentException When a class is unknown, does not implement `ContentSecurityPolicy\Sources` or
      *   cannot be created without arguments
@@ -232,19 +232,23 @@ class SecurityHeaders
     {
         $allowed = [];
         foreach ($allow as $name => $sources) {
-            if (is_int($name) && is_string($sources)) {
+            if (is_int($name) && $sources instanceof Sources) {
+                // Two instances of a class, e.g. with other arguments, keep both
+                $key = $sources::class;
+                $allowed[isset($allowed[$key]) ? $key . '#' . $name : $key] = $sources->sources();
+            } elseif (is_int($name) && is_string($sources)) {
                 if (!is_subclass_of($sources, Sources::class)) {
                     throw new InvalidArgumentException(sprintf('Not a class of %s in contentSecurityPolicyAllow of SecurityHeaders: %s', Sources::class, $sources));
                 }
                 $class = new ReflectionClass($sources);
                 if (!$class->isInstantiable() || ($class->getConstructor()?->getNumberOfRequiredParameters() ?? 0) > 0) {
-                    throw new InvalidArgumentException(sprintf('A class of contentSecurityPolicyAllow of SecurityHeaders must be created without arguments: %s', $sources));
+                    throw new InvalidArgumentException(sprintf('A class of contentSecurityPolicyAllow of SecurityHeaders must be created without arguments, or be given as an instance: %s', $sources));
                 }
                 $allowed[$sources] = (new $sources())->sources();
             } elseif (is_string($name) && is_array($sources)) {
                 $allowed[$name] = $sources;
             } else {
-                throw new InvalidArgumentException(sprintf('Neither a class nor sources by name in contentSecurityPolicyAllow of SecurityHeaders: %s', is_string($name) ? $name : var_export($sources, true)));
+                throw new InvalidArgumentException(sprintf('Neither an instance, a class nor sources by name in contentSecurityPolicyAllow of SecurityHeaders: %s', is_string($name) ? $name : var_export($sources, true)));
             }
         }
 
