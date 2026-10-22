@@ -268,7 +268,9 @@ script-src 'self' 'nonce-…' 'strict-dynamic' https:
 - **The browsers without `'strict-dynamic'`**, e.g. Safari before 15.4 (iOS 15.3 and earlier), ignore it and use
   `https:`: they allow the scripts of any HTTPS site. Chrome and Firefox support it since version 52.
 
-The hashes, e.g. `'sha256-…'`, the keywords and the schemes of `script-src` stay.
+The hashes, e.g. `'sha256-…'`, the keywords and the schemes of `script-src` stay. A policy without `worker-src` gets
+one with the sources of `script-src` before the change, as the browsers use `script-src` for the workers when the
+policy has no `worker-src`, and it would allow `https:`.
 
 ## Headers for the Web Server or the CDN
 
