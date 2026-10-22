@@ -187,6 +187,10 @@ class SecurityHeaders
                     if ($strictDynamic) {
                         $added = [...$added, "'strict-dynamic'", 'https:'];
                     }
+                    if ($strictDynamic && !isset($directives['worker-src'])) {
+                        // The workers would use script-src with https: instead: keep the sources that they used
+                        $directives = self::addSources($directives, ['worker-src' => []]);
+                    }
                     // script-src-elem replaces script-src for the <script> elements
                     $nonced = ['script-src' => $added];
                     if (isset($directives['script-src-elem'])) {

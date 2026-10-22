@@ -277,7 +277,9 @@ script-src 'self' 'nonce-…' 'strict-dynamic' https:
   `https:` を使います。HTTPS のサイトならどのスクリプトも許可されます。Chrome と Firefox はバージョン 52 から
   対応しています。
 
-`script-src` のハッシュ (`'sha256-…'` など)、キーワード、スキームは残ります。
+`script-src` のハッシュ (`'sha256-…'` など)、キーワード、スキームは残ります。`worker-src` の無いポリシーには、
+変更前の `script-src` のソースで `worker-src` を追加します。`worker-src` が無いとブラウザーはワーカーに
+`script-src` を使い、`https:` を許可してしまうためです。
 
 <a id="headers-for-the-web-server-or-the-cdn"></a>
 

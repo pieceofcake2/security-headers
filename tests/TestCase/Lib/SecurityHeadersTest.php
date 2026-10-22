@@ -309,9 +309,35 @@ class SecurityHeadersTest extends CakeTestCase
         $this->assertTrue(SecurityHeaders::usesNonce($settings));
         $this->assertSame(
             "default-src 'self'; img-src 'self' https://www.googletagmanager.com; script-src 'self' 'sha256-abc=' 'nonce-abc' 'strict-dynamic' https:; "
-            . "connect-src 'self' https://www.googletagmanager.com https://www.google.com; script-src-elem 'self' 'sha256-abc=' 'nonce-abc' 'strict-dynamic' https:",
+            . "connect-src 'self' https://www.googletagmanager.com https://www.google.com; script-src-elem 'self' 'sha256-abc=' 'nonce-abc' 'strict-dynamic' https:; "
+            . "worker-src 'self' https://www.googletagmanager.com https://cdn.example.com 'sha256-abc='",
             SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy'],
         );
+    }
+
+    /**
+     * With 'strict-dynamic', worker-src keeps the sources of script-src without the nonce and https:, which the
+     * browsers would use for the workers without it
+     *
+     * @return void
+     */
+    public function testStrictDynamicKeepsTheSourcesOfTheWorkers(): void
+    {
+        $settings = SecurityHeaders::settings([
+            'contentSecurityPolicy' => ['default-src' => ["'self'"]],
+            'contentSecurityPolicyAllow' => ['cdn' => ['script-src' => ['https://cdn.example.com']]],
+            'contentSecurityPolicyReportOnly' => false,
+            'contentSecurityPolicyStrictDynamic' => true,
+        ]);
+        $this->assertSame(
+            "default-src 'self'; script-src 'self' 'nonce-abc' 'strict-dynamic' https:; worker-src 'self' https://cdn.example.com",
+            SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy'],
+        );
+
+        $settings['contentSecurityPolicy']['worker-src'] = ["'none'"];
+        $this->assertStringContainsString("worker-src 'none'", SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy']);
+        $settings['contentSecurityPolicy'] = ['default-src' => ["'self'"], 'child-src' => ["'self'", 'blob:']];
+        $this->assertStringContainsString("worker-src 'self' blob:", SecurityHeaders::headers($settings, true, 'abc')['Content-Security-Policy']);
     }
 
     /**
