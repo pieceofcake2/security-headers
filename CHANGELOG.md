@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Unreleased
+
+- Composer loads the classes of the plugin (`Controller/`, `Lib/`, `Routing/` and `View/` in the classmap), which no
+  longer call `App::uses()`, deprecated in pieceofcake2/cakephp 2.13. The tests also run with the `2.x` branch of
+  pieceofcake2/cakephp
+
 ## 1.1.0
 
 - `contentSecurityPolicyAllow` takes instances of the classes, e.g. `new GoogleTagManager()`, which the docs now use.

@@ -20,7 +20,13 @@
     "autoload": {
         "psr-4": {
             "PieceOfCake2\\SecurityHeaders\\": "src/"
-        }
+        },
+        "classmap": [
+            "Controller/",
+            "Lib/",
+            "Routing/",
+            "View/"
+        ]
     },
     "autoload-dev": {
         "exclude-from-classmap": [

@@ -1,9 +1,6 @@
 <?php
 declare(strict_types=1);
 
-App::uses('AppHelper', 'View/Helper');
-App::uses('SecurityHeadersFilter', 'SecurityHeaders.Routing/Filter');
-
 /**
  * The nonce of the Content Security Policy for the inline scripts, when `contentSecurityPolicyNonce` is on:
  *
