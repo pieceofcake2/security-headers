@@ -33,6 +33,7 @@ $nonce = SecurityHeaders::nonce();
 $settings = SecurityHeaders::settings([
     'contentSecurityPolicyAllow' => $page['allow'],
     'contentSecurityPolicyNonce' => true,
+    'contentSecurityPolicyStrictDynamic' => $page['strictDynamic'] ?? false,
     'contentSecurityPolicyReportOnly' => false,
     'reportUri' => '/report?page=' . $name,
 ]);

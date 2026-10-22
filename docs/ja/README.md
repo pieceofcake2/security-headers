@@ -12,6 +12,7 @@ Content Security Policy は、デフォルトでは報告のみのモードで�
 - [設定](#settings)
 - [ほかのサイトを許可する](#allowing-other-sites)
 - [インラインのスクリプトと nonce](#inline-scripts-and-the-nonce)
+- [スクリプトが読み込むスクリプト ('strict-dynamic')](#strict-dynamic)
 - [ウェブサーバーや CDN で送るヘッダー](#headers-for-the-web-server-or-the-cdn)
 - [Content Security Policy を有効にする](#enforcing-the-content-security-policy)
 - [アクションでヘッダーを変える](#changing-the-headers-in-an-action)
@@ -82,6 +83,7 @@ Configure::write('SecurityHeaders', [
 | `contentSecurityPolicy` | `Content-Security-Policy` | `default-src 'self'; frame-ancestors 'self'; form-action 'self'; base-uri 'self'; object-src 'none'` | ページのスクリプト、スタイル、画像、フレーム、フォームの送信先を制限します。XSS に対する主な防御です。ディレクティブとソースの配列か、ポリシーの文字列で書きます。 |
 | `contentSecurityPolicyAllow` | | `[]` | ポリシーで許可するほかのサイト。サービスのクラスのインスタンス (例: `new GoogleTagManager()`) か、名前を付けたディレクティブごとのソースを書きます。[ほかのサイトを許可する](#allowing-other-sites) を参照してください。 |
 | `contentSecurityPolicyNonce` | | `null` | リクエストごとに新しい nonce を `script-src` に追加します。`nonce` 属性にその値を持つインラインのスクリプトが許可されます。デフォルト (`null`) では、`contentSecurityPolicyAllow` のプリセットが必要とするときにオンです。`true` で常にオン、`false` でオフです。[インラインのスクリプトと nonce](#inline-scripts-and-the-nonce) を参照してください。 |
+| `contentSecurityPolicyStrictDynamic` | | `false` | `script-src` に `'strict-dynamic'` を追加し、そのホストを `https:` に置き換えます。nonce はオンになります。[スクリプトが読み込むスクリプト ('strict-dynamic')](#strict-dynamic) を参照してください。 |
 | `contentSecurityPolicyReportOnly` | | `true` | ポリシーを `Content-Security-Policy-Report-Only` で送ります。ブラウザーは違反をブロックせず、コンソール (と `reportUri`) に報告します。[Content Security Policy を有効にする](#enforcing-the-content-security-policy) を参照してください。 |
 | `reportUri` | | `false` | 違反の報告を受け取る URL。ポリシーに `report-uri` として追加します。 |
 | `xFrameOptions` | `X-Frame-Options` | `SAMEORIGIN` | ほかのサイトがページをフレームで表示できるか (クリックジャッキング)。モダンなブラウザーではポリシーの `frame-ancestors` が優先されます。古いブラウザー向けです。 |
@@ -230,6 +232,30 @@ public $helpers = ['SecurityHeaders.SecurityHeaders'];
   `contentSecurityPolicyAllow` に追加してください。
 - **キャッシュ。** nonce はレスポンスごとに変わります。`CacheHelper` や CDN が HTML ごとキャッシュした
   ページには別のレスポンスの nonce が入っているため、インラインのスクリプトがブロックされます。
+
+<a id="strict-dynamic"></a>
+
+## スクリプトが読み込むスクリプト ('strict-dynamic')
+
+`'contentSecurityPolicyStrictDynamic' => true` にすると、`script-src` は nonce、`'strict-dynamic'`、`https:` に
+なります。
+
+```
+script-src 'self' 'nonce-…' 'strict-dynamic' https:
+```
+
+- **nonce を持つスクリプトが `document.createElement('script')` で読み込むスクリプト** (Google タグマネージャーの
+  タグ、ピクセル、`import()` など) は、どのホストからでも許可されます。プリセットの `script-src` のホストは不要に
+  なり、プラグインはそれを取り除きます。ほかのディレクティブ (`img-src`、`connect-src` など) のホストは残ります。
+- **`script-src` のホストを使ってポリシーを回避できなくなります** (許可したホストの JSONP のエンドポイントなど)。
+- **HTML のすべての `<script>` 要素に nonce が必要です** (`src` を持つものも)。ブラウザーはホストと `'self'` を
+  無視するため、nonce の無い `<script src>` はブロックされます。ビルドツールのモジュールのスクリプトと
+  `<link rel="modulepreload">`、`document.write()` で書いたスクリプトも同じです。
+- **`'strict-dynamic'` に対応していないブラウザー** (Safari 15.4 より前。iOS 15.3 以前) は、これを無視して
+  `https:` を使います。HTTPS のサイトならどのスクリプトも許可されます。Chrome と Firefox はバージョン 52 から
+  対応しています。
+
+`script-src` のハッシュ (`'sha256-…'` など)、キーワード、スキームは残ります。
 
 <a id="headers-for-the-web-server-or-the-cdn"></a>
 

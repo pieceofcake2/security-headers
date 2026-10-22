@@ -2,6 +2,9 @@
 /**
  * The pages of the policy check: for each service, the classes of the policy, the embed code or the base code of
  * the service (`{nonce}` is the nonce of the response), and the URLs that the page must load.
+ *
+ * The pages `<page>-strict-dynamic` check the services with scripts with `contentSecurityPolicyStrictDynamic`, and
+ * the nonce on every `<script>` of their code, as the browsers block the `<script>` elements of the HTML without it.
  */
 
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\Facebook;
@@ -23,7 +26,7 @@ use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\XPixel;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YahooJapanAds;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
-return [
+$pages = [
     'google-tag-manager' => [
         'allow' => [GoogleTagManager::class],
         'html' => <<<'HTML'
@@ -199,3 +202,14 @@ HTML,
         'loads' => ['https://bat.bing.com/bat.js'],
     ],
 ];
+
+foreach ($pages as $name => $page) {
+    if (str_contains($page['html'], '<script')) {
+        $pages[$name . '-strict-dynamic'] = [
+            'strictDynamic' => true,
+            'html' => (string)preg_replace('/<script(?![^>]*\bnonce=)/', '<script nonce="{nonce}"', $page['html']),
+        ] + $page;
+    }
+}
+
+return $pages;
