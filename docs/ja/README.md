@@ -221,6 +221,28 @@ public $helpers = ['SecurityHeaders.SecurityHeaders'];
 <?= $this->Html->scriptBlock('console.log(1);', ['nonce' => $this->SecurityHeaders->nonce()]) ?>
 ```
 
+`SecurityHeadersHtmlHelper` は、`HtmlHelper` の `script()`、`scriptBlock()`、`scriptStart()` のスクリプトに nonce
+を付けます。`Html` として読み込みます。
+
+```php
+public $helpers = [
+    'Html' => ['className' => 'SecurityHeaders.SecurityHeadersHtml'],
+    'SecurityHeaders.SecurityHeaders',
+];
+```
+
+```php
+<?= $this->Html->script('https://cdn.example.com/widget.js') ?>
+<!-- <script src="https://cdn.example.com/widget.js" nonce="..."></script> -->
+<?php $this->Html->scriptStart(['inline' => false]); ?>
+    window.dataLayer = window.dataLayer || [];
+<?php $this->Html->scriptEnd(); ?>
+```
+
+`nonce` オプションを渡すとその値になり、`'nonce' => false` で付けません。テンプレートに書いた `<script>` 要素には、
+`nonce` 属性を書く必要があります。レスポンスのすべての `<script>` に nonce を付けるフィルターは、XSS の
+スクリプトにも付けてしまうためです。
+
 - **属性と `javascript:` のリンク**には nonce を付けられません。コードをスクリプトのファイルに移してください
   (`addEventListener()` など)。アプリケーションのスケルトン (pieceofcake2/app。CakePHP 5 のものも同じ) には
   2 つあります。フラッシュメッセージは `onclick` 属性でクリックすると消え、エラーのレイアウトには

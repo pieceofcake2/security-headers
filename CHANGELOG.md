@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- New helper `SecurityHeadersHtmlHelper`, an `HtmlHelper` that gives the nonce to the scripts of `script()`,
+  `scriptBlock()` and `scriptStart()`: `'Html' => ['className' => 'SecurityHeaders.SecurityHeadersHtml']`
 - Composer loads the classes of the plugin (`Controller/`, `Lib/`, `Routing/` and `View/` in the classmap), which no
   longer call `App::uses()`, deprecated in pieceofcake2/cakephp 2.13. The tests also run with the `2.x` branch of
   pieceofcake2/cakephp
