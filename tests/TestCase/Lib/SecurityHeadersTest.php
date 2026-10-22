@@ -1,6 +1,9 @@
 <?php
 
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAds;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAnalytics;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleAnalyticsWithAds;
+use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleDomains;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\MetaPixel;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\NeedsNonce;
@@ -198,6 +201,39 @@ class SecurityHeadersTest extends CakeTestCase
         $this->assertSame(array_values(array_unique($sources)), $sources);
     }
 
+    public function testInstancesOfClasses(): void
+    {
+        $settings = SecurityHeaders::settings(['contentSecurityPolicyAllow' => [new GoogleTagManager()]]);
+        $headers = SecurityHeaders::headers($settings, true, 'abc');
+
+        $this->assertTrue(SecurityHeaders::usesNonce($settings));
+        $this->assertStringContainsString("script-src 'self' https://www.googletagmanager.com 'nonce-abc'", $headers['Content-Security-Policy-Report-Only']);
+    }
+
+    public function testCountriesOfTheGoogleAdsFeatures(): void
+    {
+        $policy = SecurityHeaders::headers(SecurityHeaders::settings(['contentSecurityPolicyAllow' => [
+            new GoogleAnalyticsWithAds(countries: ['jp', 'UK']),
+            new GoogleAds(countries: ['jp']),
+        ]]), true)['Content-Security-Policy-Report-Only'];
+
+        preg_match('#img-src ([^;]*)#', $policy, $matches);
+        $img = explode(' ', $matches[1]);
+        $this->assertContains('https://*.google.co.jp', $img);
+        $this->assertContains('https://*.google.co.uk', $img);
+        $this->assertContains('https://www.google.co.jp', $img);
+        $this->assertStringContainsString('https://*.google.co.jp', (string)strstr($policy, 'connect-src'));
+        $this->assertSame('google.com.br', GoogleDomains::domain('br'));
+    }
+
+    public function testUnknownCountry(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Google has no domain for the country: xx');
+
+        new GoogleAnalyticsWithAds(countries: ['xx']);
+    }
+
     public function testEveryClassOfThePlugin(): void
     {
         $classes = array_map(static fn(string $file): string => 'PieceOfCake2\\SecurityHeaders\\ContentSecurityPolicy\\' . basename($file, '.php'), glob(dirname(__DIR__, 3) . '/src/ContentSecurityPolicy/*.php') ?: []);
@@ -232,7 +268,7 @@ class SecurityHeadersTest extends CakeTestCase
     public function testNeitherAClassNorSources(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Neither a class nor sources by name in contentSecurityPolicyAllow of SecurityHeaders: stripe');
+        $this->expectExceptionMessage('Neither an instance, a class nor sources by name in contentSecurityPolicyAllow of SecurityHeaders: stripe');
         SecurityHeaders::settings(['contentSecurityPolicyAllow' => ['stripe' => 'https://js.stripe.com']]);
     }
 
@@ -387,7 +423,7 @@ class SecurityHeadersTest extends CakeTestCase
     public function testClassWithArguments(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('must be created without arguments: SecurityHeadersTestWithArguments');
+        $this->expectExceptionMessage('must be created without arguments, or be given as an instance: SecurityHeadersTestWithArguments');
         SecurityHeaders::settings(['contentSecurityPolicyAllow' => [SecurityHeadersTestWithArguments::class]]);
     }
 
@@ -399,6 +435,6 @@ class SecurityHeadersTest extends CakeTestCase
      */
     private static function isPreset(string $class): bool
     {
-        return !interface_exists($class);
+        return !interface_exists($class) && is_subclass_of($class, Sources::class);
     }
 }

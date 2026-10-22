@@ -9,7 +9,7 @@ use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 Configure::write('SecurityHeaders', [
-    'contentSecurityPolicyAllow' => [GoogleTagManager::class, YouTube::class],
+    'contentSecurityPolicyAllow' => [new GoogleTagManager(), new YouTube()],
 ]);
 ```
 
@@ -108,7 +108,7 @@ Google アナリティクス (Google シグナルやリマーケティングな�
 | `connect-src` | `https://www.googletagmanager.com` `https://*.google-analytics.com` `https://*.google.com` `https://*.g.doubleclick.net` `https://pagead2.googlesyndication.com` |
 | `frame-src` | `https://www.googletagmanager.com` |
 
-利用者の国のドメインを追加してください (例: `img-src` と `connect-src` に `https://*.google.co.jp`)。ポリシーではホストの末尾にワイルドカードを使えません。
+Google 広告の機能は、ユーザーの国の Google のドメインを使います。ユーザーの国を渡してください: `new GoogleAnalyticsWithAds(countries: ['jp', 'kr'])` は、`img-src` と `connect-src` に `https://*.google.co.jp` と `https://*.google.co.kr` を追加します (ポリシーではホストの末尾にワイルドカードを使えません)。国は [Google の一覧](https://www.google.com/supported_domains) のドメインの最後の部分です (例: `google.co.uk` なら `uk`)。知らない国は `InvalidArgumentException` になります。ほかの国のユーザーはその国のドメインを使い、ポリシーで止まります。
 
 <a id="adobetags"></a>
 
@@ -174,7 +174,7 @@ Google 広告のコンバージョン、リマーケティング、コンバー�
 | `connect-src` | `https://www.googletagmanager.com` `https://www.googleadservices.com` `https://googleads.g.doubleclick.net` `https://pagead2.googlesyndication.com` `https://www.google.com` `https://ad.doubleclick.net` |
 | `frame-src` | `https://www.googletagmanager.com` |
 
-利用者の国のドメインを追加してください (例: `img-src` と `connect-src` に `https://www.google.co.jp`)。
+`GoogleAnalyticsWithAds` と同じく、ユーザーの国を渡してください: `new GoogleAds(countries: ['jp'])` は、`img-src` と `connect-src` に `https://www.google.co.jp` を追加します。
 
 <a id="floodlight"></a>
 

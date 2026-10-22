@@ -9,7 +9,7 @@ use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\GoogleTagManager;
 use PieceOfCake2\SecurityHeaders\ContentSecurityPolicy\YouTube;
 
 Configure::write('SecurityHeaders', [
-    'contentSecurityPolicyAllow' => [GoogleTagManager::class, YouTube::class],
+    'contentSecurityPolicyAllow' => [new GoogleTagManager(), new YouTube()],
 ]);
 ```
 
@@ -98,7 +98,7 @@ From [Google's guide](https://developers.google.com/tag-platform/security/guides
 | `connect-src` | `https://www.googletagmanager.com` `https://*.google-analytics.com` `https://*.google.com` `https://*.g.doubleclick.net` `https://pagead2.googlesyndication.com` |
 | `frame-src` | `https://www.googletagmanager.com` |
 
-Add the domain of the country of your users, e.g. `https://*.google.co.jp` to `img-src` and `connect-src`: a policy cannot have a wildcard at the end of a host.
+The features of Google Ads use the domain of Google of the country of the user. Give the countries of your users: `new GoogleAnalyticsWithAds(countries: ['jp', 'kr'])` adds `https://*.google.co.jp` and `https://*.google.co.kr` to `img-src` and `connect-src` (a policy cannot have a wildcard at the end of a host). The country is the last part of the domain of [Google's list](https://www.google.com/supported_domains), e.g. `uk` for `google.co.uk`; an unknown one throws an `InvalidArgumentException`. The users of the other countries use their domains, which the policy blocks.
 
 ### `AdobeTags` {#adobetags}
 
@@ -154,7 +154,7 @@ From [Google's guide](https://developers.google.com/tag-platform/security/guides
 | `connect-src` | `https://www.googletagmanager.com` `https://www.googleadservices.com` `https://googleads.g.doubleclick.net` `https://pagead2.googlesyndication.com` `https://www.google.com` `https://ad.doubleclick.net` |
 | `frame-src` | `https://www.googletagmanager.com` |
 
-Add the domain of the country of your users, e.g. `https://www.google.co.jp` to `img-src` and `connect-src`.
+Give the countries of your users, as for `GoogleAnalyticsWithAds`: `new GoogleAds(countries: ['jp'])` adds `https://www.google.co.jp` to `img-src` and `connect-src`.
 
 ### `Floodlight` {#floodlight}
 
