@@ -214,6 +214,28 @@ Then give the nonce to the inline scripts of the views and the layouts:
 <?= $this->Html->scriptBlock('console.log(1);', ['nonce' => $this->SecurityHeaders->nonce()]) ?>
 ```
 
+`SecurityHeadersHtmlHelper` gives the nonce to the scripts of `script()`, `scriptBlock()` and `scriptStart()` of
+`HtmlHelper`. Load it as `Html`:
+
+```php
+public $helpers = [
+    'Html' => ['className' => 'SecurityHeaders.SecurityHeadersHtml'],
+    'SecurityHeaders.SecurityHeaders',
+];
+```
+
+```php
+<?= $this->Html->script('https://cdn.example.com/widget.js') ?>
+<!-- <script src="https://cdn.example.com/widget.js" nonce="..."></script> -->
+<?php $this->Html->scriptStart(['inline' => false]); ?>
+    window.dataLayer = window.dataLayer || [];
+<?php $this->Html->scriptEnd(); ?>
+```
+
+A `nonce` option replaces the nonce, and `'nonce' => false` leaves it out. The `<script>` elements written in the
+templates still need the `nonce` attribute: a filter that added the nonce to every `<script>` of the response would
+add it to the scripts of an XSS too.
+
 - **Attributes and `javascript:` links** cannot have a nonce: move their code to a script file, e.g. with
   `addEventListener()`. The application skeleton (pieceofcake2/app, as that of CakePHP 5) has two: the flash
   messages hide on a click with an `onclick` attribute, and the error layout has a `javascript:history.back()`
