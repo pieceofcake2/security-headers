@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.2.0
 
 - New setting `contentSecurityPolicyStrictDynamic`: adds `'strict-dynamic'` to `script-src` and replaces its hosts
   with `https:`, for the browsers without it. The scripts that the scripts of the nonce load are allowed from any
