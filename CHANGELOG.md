@@ -1,6 +1,6 @@
 # CHANGELOG
 
-## Unreleased
+## 1.1.0
 
 - `contentSecurityPolicyAllow` takes instances of the classes, e.g. `new GoogleTagManager()`, which the docs now use.
   The names of the classes without arguments, e.g. `GoogleTagManager::class`, are still accepted
